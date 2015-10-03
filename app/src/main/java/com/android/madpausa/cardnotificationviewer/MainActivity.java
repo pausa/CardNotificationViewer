@@ -1,5 +1,6 @@
 package com.android.madpausa.cardnotificationviewer;
 
+import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -8,11 +9,13 @@ import android.net.wifi.WifiConfiguration;
 import android.os.Binder;
 import android.os.IBinder;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -20,6 +23,16 @@ public class MainActivity extends AppCompatActivity {
     ConcreteNotificationListenerService nService;
     boolean nBound;
     ActivityBinder aBinder = new ActivityBinder();
+
+    public void startNotificationService(View view) {
+        Intent intent = new Intent(this, ConcreteNotificationListenerService.class);
+        startService(intent);
+    }
+
+    public void stopNotificationService(View view) {
+        Intent intent = new Intent (this, ConcreteNotificationListenerService.class);
+        stopService(intent);
+    }
 
     public class ActivityBinder extends Binder {
         public void addNotification(StatusBarNotification sbn){
@@ -68,6 +81,15 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+    public void sendTestNotification (View view){
+        NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
+        nBuilder.setContentTitle("Test Notification!");
+        nBuilder.setContentText("This is just a test");
+        nBuilder.setSmallIcon(R.drawable.ic_notification);
+
+        NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        nManager.notify(0, nBuilder.build());
+    }
 
     private ServiceConnection nConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service){
@@ -88,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
             nService = null;
             nBound = false;
         }
+
+
 
     };
 
