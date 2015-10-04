@@ -1,15 +1,19 @@
 package com.android.madpausa.cardnotificationviewer;
 
 import android.app.NotificationManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.net.wifi.WifiConfiguration;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,8 +25,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     ConcreteNotificationListenerService nService;
+    NotificationReceiver nReceiver;
     boolean nBound;
-    ActivityBinder aBinder = new ActivityBinder();
 
     public void startNotificationService(View view) {
         Intent intent = new Intent(this, ConcreteNotificationListenerService.class);
@@ -34,11 +38,14 @@ public class MainActivity extends AppCompatActivity {
         stopService(intent);
     }
 
-    public class ActivityBinder extends Binder {
-        public void addNotification(StatusBarNotification sbn){
-            MainActivityFragment nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
-            nFragment.addNotification(sbn);
-        }
+    public void startNotificationServiceActivity(View view) {
+        Intent intent = new Intent ("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+        startActivity(intent);
+    }
+
+    public void addNotification(StatusBarNotification sbn){
+        MainActivityFragment nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
+        nFragment.addNotification(sbn);
     }
 
     @Override
@@ -48,15 +55,21 @@ public class MainActivity extends AppCompatActivity {
 
         //binding del service
         Intent intent = new Intent (this, ConcreteNotificationListenerService.class);
-
+        intent.setAction(getString(R.string.custom_binding));
         Log.d(TAG, "Avvio il binding");
         bindService(intent, nConnection, Context.BIND_AUTO_CREATE);
+
+        Log.d(TAG, "registro il receiver");
+        nReceiver = new NotificationReceiver();
+        IntentFilter filter = new IntentFilter(getString(R.string.notification_receiver));
+        LocalBroadcastManager.getInstance(this).registerReceiver(nReceiver,filter);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         unbindService(nConnection);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(nReceiver);
     }
 
 
@@ -97,12 +110,9 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG,"connesso a servizio");
             nService = binder.getService();
             nBound = true;
-            Log.d(TAG,"aggiornamento su fragment");
+            Log.d(TAG, "aggiornamento su fragment");
             MainActivityFragment nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
             nFragment.initNotificationList(nService.getActiveNotificationsList());
-            Log.d(TAG,"Associo il binder del client");
-            nService.setClientBinder(aBinder);
-
         }
         public void onServiceDisconnected(ComponentName className) {
             // This is called when the connection with the service has been
@@ -110,9 +120,22 @@ public class MainActivity extends AppCompatActivity {
             nService = null;
             nBound = false;
         }
-
-
-
     };
+
+    private class NotificationReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Parcelable pExtra;
+            pExtra = intent.getParcelableExtra(getString(R.string.notification_extra));
+            if (pExtra != null && pExtra instanceof StatusBarNotification){
+                Log.d (TAG, "Ricevuta notifica!");
+                addNotification((StatusBarNotification) pExtra);
+            }
+            else {
+                Log.d (TAG, "messaggio non valido");
+            }
+        }
+    }
 
 }

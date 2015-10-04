@@ -5,6 +5,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -13,11 +14,8 @@ import java.util.List;
 
 public class ConcreteNotificationListenerService extends NotificationListenerService {
     private static final String TAG = ConcreteNotificationListenerService.class.getSimpleName();
-    private final IBinder mBinder = null;
-    MainActivity.ActivityBinder clientBinder = null;
+    private final IBinder mBinder = new LocalBinder();
     List<StatusBarNotification> notificationList;
-    MainActivity boundActivity;
-    IBinder originalBinder;
 
 
     /**
@@ -44,29 +42,18 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG,"Avvio il servizio! " + super.getClass().toString());
-        return super.onStartCommand(intent, flags, startId);
-    }
-
-    @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.d(TAG, "arrivata notifica " + sbn.toString());
         super.onNotificationPosted(sbn);
         handlePostedNotification(sbn);
     }
-
-    @Override
-    public void onNotificationPosted(StatusBarNotification sbn, RankingMap rankingMap) {
-        super.onNotificationPosted(sbn, rankingMap);
-        handlePostedNotification(sbn);
-    }
-
     public void handlePostedNotification (StatusBarNotification sbn) {
         notificationList.add(sbn);
-        if (clientBinder != null){
-            clientBinder.addNotification(sbn);
-        }
+        //Creo l'intent per il messaggio da mandare a chi lo vuole
+
+        Intent intent = new Intent(getString(R.string.notification_receiver));
+        intent.putExtra(getString(R.string.notification_extra),sbn);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     public List<StatusBarNotification> getActiveNotificationsList(){
@@ -92,12 +79,13 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     @Override
     public IBinder onBind(Intent intent) {
-        originalBinder = super.onBind(intent);
-        Log.d(TAG, "restituisco il binder");
-        return mBinder;
-    }
-
-    public void setClientBinder (MainActivity.ActivityBinder cBinder){
-        clientBinder = cBinder;
+        if (intent.getAction().equals(getString(R.string.custom_binding))){
+            Log.d(TAG, "custom binding");
+            return mBinder;
+        }
+        else{
+            Log.d(TAG,"system binding");
+            return super.onBind(intent);
+        }
     }
 }

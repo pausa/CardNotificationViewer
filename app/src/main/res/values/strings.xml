@@ -6,4 +6,8 @@
     <string name="send_button">Send Test Notification</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
+    <string name="custom_binding">com.android.madpausa.cardnotificationviewer.CUSTOM_BINDING</string>
+    <string name="enable_service">Enable Service</string>
+    <string name="notification_receiver">com.android.madpausa.cardnotificationviewer.NOTIFICATION_RECEIVER</string>
+    <string name="notification_extra">notification</string>
 </resources>

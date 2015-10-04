@@ -32,12 +32,14 @@ public class MainActivityFragment extends ListFragment  {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         //caricare l'adapter
-        notificationAdapter = new NotificationListAdapter();
+        notificationAdapter = new NotificationListAdapter(inflater.getContext());
         setListAdapter(notificationAdapter);
 
         //inizializzare il loader
-        return inflater.inflate(R.layout.fragment_main, container, false);
+        //return inflater.inflate(R.layout.fragment_main, container, false);
+        return super.onCreateView(inflater,container,savedInstanceState);
     }
 
     @Override

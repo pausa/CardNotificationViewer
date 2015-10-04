@@ -30,4 +30,9 @@
             android:text="@string/stop_service"
             android:onClick="stopNotificationService"/>
     </LinearLayout>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/enable_service"
+        android:onClick="startNotificationServiceActivity"/>
 </LinearLayout>
