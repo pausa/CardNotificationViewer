@@ -70,14 +70,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if(nBound)
-            nFragment.initNotificationList(nService.getActiveNotificationsList());
-    }
-
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -115,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
             nService = binder.getService();
             nBound = true;
             Log.d(TAG, "aggiornamento su fragment");
-            nFragment.initNotificationList(nService.getActiveNotificationsList());
+            nFragment.initNotificationList(nService);
         }
         public void onServiceDisconnected(ComponentName className) {
             // This is called when the connection with the service has been

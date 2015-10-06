@@ -60,6 +60,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     public void handlePostedNotification (StatusBarNotification sbn) {
+        //la notifica deve risalire in cima alla pila
+        notificationMap.remove(getNotificationKey(sbn));
         notificationMap.put(getNotificationKey(sbn), sbn);
 
         //Creo l'intent per il messaggio da mandare a chi lo vuole
@@ -70,6 +72,10 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     public List<StatusBarNotification> getActiveNotificationsList(){
         return new ArrayList<StatusBarNotification>(notificationMap.values());
+    }
+
+    public Map<String, StatusBarNotification> getNotificationMap(){
+        return notificationMap;
     }
 
     public void clearNotificationList(){
@@ -83,7 +89,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     private void handleRemovedNotification(StatusBarNotification sbn) {
-        notificationMap.remove(getNotificationKey(sbn));
+        //va rimossa solo se non è clearable
+        if (sbn.isClearable())
+            notificationMap.remove(getNotificationKey(sbn));
 
         //Creo l'intent per il messaggio da mandare a chi lo vuole
         Intent intent = new Intent(REMOVE_NOTIFICATION_ACTION);

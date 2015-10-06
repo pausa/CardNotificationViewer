@@ -28,42 +28,37 @@ import java.util.zip.Inflater;
  */
 public class NotificationListAdapter  extends BaseAdapter  {
     private static final String TAG = NotificationListAdapter.class.getSimpleName();
-    Map<String,StatusBarNotification> nMap = null;
+
     List <StatusBarNotification> nList = null;
+    ConcreteNotificationListenerService nService;
+
     Context context;
     public NotificationListAdapter(Context c) {
         super();
         context = c;
-        nMap = new LinkedHashMap<String, StatusBarNotification>();
         nList = new ArrayList<StatusBarNotification>();
-    }
 
-    public void setList(List<StatusBarNotification> list) {
-        //nList = list;
-        for (StatusBarNotification sbn : list){
-            nMap.put(ConcreteNotificationListenerService.getNotificationKey(sbn), sbn);
-        }
+    }
+    public void setnService(ConcreteNotificationListenerService nService) {
+        this.nService = nService;
         notifyDataSetChanged();
     }
 
     public void addNotification (StatusBarNotification sbn){
-        nMap.put(ConcreteNotificationListenerService.getNotificationKey(sbn), sbn);
         notifyDataSetChanged();
     }
 
     public void removeNotification(StatusBarNotification sbn){
-        nMap.remove (ConcreteNotificationListenerService.getNotificationKey(sbn));
         notifyDataSetChanged();
     }
 
     public void clearList (){
-        nMap.clear();
         notifyDataSetChanged();
     }
 
     @Override
     public int getCount() {
-        return nMap.size();
+        return nList.size();
     }
 
     @Override
@@ -86,7 +81,7 @@ public class NotificationListAdapter  extends BaseAdapter  {
         RemoteViews nRemote = nList.get(position).getNotification().bigContentView;
         if (nRemote == null)
             nRemote = nList.get(position).getNotification().contentView;
-        Log.d(TAG, "elementi in lista: " + getCount());
+        Log.d(TAG, "id notifica: " + ConcreteNotificationListenerService.getNotificationKey(nList.get(position)));
 
         View nView = nRemote.apply(context, parent);
         nView.setTag(nList.get(position).getNotification());
@@ -96,7 +91,11 @@ public class NotificationListAdapter  extends BaseAdapter  {
     @Override
     public void notifyDataSetChanged() {
         //va aggiornata prima la lista, altrimenti potrebbero essere resituiti risultati non aggiornati
-        nList = new ArrayList<StatusBarNotification>(nMap.values());
+        //la lista viene aggiornata in modo che le notifiche più recenti siano in cima
+        nList = new ArrayList<StatusBarNotification>();
+        if (nService != null)
+            for (StatusBarNotification sbn : nService.getNotificationMap().values()) nList.add(0, sbn);
+
         super.notifyDataSetChanged();
 
     }

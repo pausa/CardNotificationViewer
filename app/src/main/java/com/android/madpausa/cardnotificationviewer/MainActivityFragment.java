@@ -34,12 +34,18 @@ public class MainActivityFragment extends ListFragment  {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        notificationAdapter.notifyDataSetChanged();
+    }
+
+    @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
         super.onListItemClick(l, v, position, id);
     }
 
-    public void initNotificationList (List<StatusBarNotification> list){
-        notificationAdapter.setList(list);
+    public void initNotificationList (ConcreteNotificationListenerService nService){
+        notificationAdapter.setnService(nService);
     }
 
     public void addNotification (StatusBarNotification sbn){
