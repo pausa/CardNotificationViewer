@@ -26,25 +26,18 @@ public class MainActivity extends AppCompatActivity {
 
     ConcreteNotificationListenerService nService;
     NotificationReceiver nReceiver;
-    boolean nBound;
-
-    public void startNotificationService(View view) {
-        Intent intent = new Intent(this, ConcreteNotificationListenerService.class);
-        startService(intent);
-    }
-
-    public void stopNotificationService(View view) {
-        Intent intent = new Intent (this, ConcreteNotificationListenerService.class);
-        stopService(intent);
-    }
+    MainActivityFragment nFragment;
+    boolean nBound = false;
 
     public void startNotificationServiceActivity(View view) {
         Intent intent = new Intent ("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
         startActivity(intent);
     }
 
+    public void removeNotification(StatusBarNotification sbn){
+        nFragment.removeNotification(sbn);
+    }
     public void addNotification(StatusBarNotification sbn){
-        MainActivityFragment nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
         nFragment.addNotification(sbn);
     }
 
@@ -55,14 +48,18 @@ public class MainActivity extends AppCompatActivity {
 
         //binding del service
         Intent intent = new Intent (this, ConcreteNotificationListenerService.class);
-        intent.setAction(getString(R.string.custom_binding));
+        intent.setAction(ConcreteNotificationListenerService.CUSTOM_BINDING);
         Log.d(TAG, "Avvio il binding");
         bindService(intent, nConnection, Context.BIND_AUTO_CREATE);
 
         Log.d(TAG, "registro il receiver");
         nReceiver = new NotificationReceiver();
-        IntentFilter filter = new IntentFilter(getString(R.string.notification_receiver));
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ConcreteNotificationListenerService.ADD_NOTIFICATION_ACTION);
+        filter.addAction(ConcreteNotificationListenerService.REMOVE_NOTIFICATION_ACTION);
         LocalBroadcastManager.getInstance(this).registerReceiver(nReceiver,filter);
+        nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
+
     }
 
     @Override
@@ -70,6 +67,13 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         unbindService(nConnection);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(nReceiver);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(nBound)
+            nFragment.initNotificationList(nService.getActiveNotificationsList());
     }
 
 
@@ -111,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
             nService = binder.getService();
             nBound = true;
             Log.d(TAG, "aggiornamento su fragment");
-            MainActivityFragment nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
             nFragment.initNotificationList(nService.getActiveNotificationsList());
         }
         public void onServiceDisconnected(ComponentName className) {
@@ -122,15 +125,30 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    public void clearAllNotifications(View view) {
+        if (nBound)
+            nService.clearNotificationList();
+        nFragment.clearNotificationList();
+    }
+
     private class NotificationReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d (TAG, "Ricevuto messaggio!");
             Parcelable pExtra;
-            pExtra = intent.getParcelableExtra(getString(R.string.notification_extra));
+            pExtra = intent.getParcelableExtra(ConcreteNotificationListenerService.NOTIFICATION_EXTRA);
             if (pExtra != null && pExtra instanceof StatusBarNotification){
                 Log.d (TAG, "Ricevuta notifica!");
-                addNotification((StatusBarNotification) pExtra);
+                //controllo l'azione
+                switch (intent.getAction()) {
+                    case ConcreteNotificationListenerService.REMOVE_NOTIFICATION_ACTION:
+                        removeNotification((StatusBarNotification) pExtra);
+                        break;
+                    default:
+                        addNotification((StatusBarNotification) pExtra);
+                        break;
+                }
             }
             else {
                 Log.d (TAG, "messaggio non valido");

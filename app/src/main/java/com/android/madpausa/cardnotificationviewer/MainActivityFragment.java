@@ -1,21 +1,12 @@
 package com.android.madpausa.cardnotificationviewer;
 
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.net.wifi.WifiConfiguration;
-import android.os.IBinder;
 import android.service.notification.StatusBarNotification;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListAdapter;
+import android.widget.ListView;
 
 import java.util.List;
 
@@ -36,16 +27,15 @@ public class MainActivityFragment extends ListFragment  {
         //caricare l'adapter
         notificationAdapter = new NotificationListAdapter(inflater.getContext());
         setListAdapter(notificationAdapter);
-
+        super.onCreateView(inflater, container, savedInstanceState);
         //inizializzare il loader
         //return inflater.inflate(R.layout.fragment_main, container, false);
-        return super.onCreateView(inflater,container,savedInstanceState);
+        return inflater.inflate(R.layout.fragment_main,container,false);
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
-        //TODO: aggiornare lista notifiche
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        super.onListItemClick(l, v, position, id);
     }
 
     public void initNotificationList (List<StatusBarNotification> list){
@@ -55,5 +45,11 @@ public class MainActivityFragment extends ListFragment  {
     public void addNotification (StatusBarNotification sbn){
         notificationAdapter.addNotification(sbn);
     }
+    public void clearNotificationList (){
+        notificationAdapter.clearList();
+    }
 
+    public void removeNotification(StatusBarNotification sbn) {
+        notificationAdapter.removeNotification(sbn);
+    }
 }

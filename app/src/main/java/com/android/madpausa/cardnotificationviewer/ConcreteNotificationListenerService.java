@@ -2,6 +2,7 @@ package com.android.madpausa.cardnotificationviewer;
 
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Build;
 import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -10,12 +11,22 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ConcreteNotificationListenerService extends NotificationListenerService {
     private static final String TAG = ConcreteNotificationListenerService.class.getSimpleName();
+    public static final String CUSTOM_BINDING = "com.android.madpausa.cardnotificationviewer.CUSTOM_BINDING";
+    public static final String NOTIFICATION_RECEIVER = "com.android.madpausa.cardnotificationviewer.NOTIFICATION_RECEIVER";
+    public static final String NOTIFICATION_EXTRA = "notification";
+    public static final String ADD_NOTIFICATION_ACTION = NOTIFICATION_RECEIVER + ".add_notification";
+    public static final String REMOVE_NOTIFICATION_ACTION = NOTIFICATION_RECEIVER + ".remove_notification";
+
+
     private final IBinder mBinder = new LocalBinder();
-    List<StatusBarNotification> notificationList;
+    Map<String,StatusBarNotification> notificationMap;
 
 
     /**
@@ -38,7 +49,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Creo il servizio");
-        notificationList = new ArrayList<StatusBarNotification>();
+        notificationMap = new LinkedHashMap<String,StatusBarNotification>();
     }
 
     @Override
@@ -47,22 +58,37 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         super.onNotificationPosted(sbn);
         handlePostedNotification(sbn);
     }
-    public void handlePostedNotification (StatusBarNotification sbn) {
-        notificationList.add(sbn);
-        //Creo l'intent per il messaggio da mandare a chi lo vuole
 
-        Intent intent = new Intent(getString(R.string.notification_receiver));
-        intent.putExtra(getString(R.string.notification_extra),sbn);
+    public void handlePostedNotification (StatusBarNotification sbn) {
+        notificationMap.put(getNotificationKey(sbn), sbn);
+
+        //Creo l'intent per il messaggio da mandare a chi lo vuole
+        Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
+        intent.putExtra(NOTIFICATION_EXTRA, sbn);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     public List<StatusBarNotification> getActiveNotificationsList(){
-        return notificationList;
+        return new ArrayList<StatusBarNotification>(notificationMap.values());
+    }
+
+    public void clearNotificationList(){
+        cancelAllNotifications();
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
         super.onNotificationRemoved(sbn);
+        handleRemovedNotification(sbn);
+    }
+
+    private void handleRemovedNotification(StatusBarNotification sbn) {
+        notificationMap.remove(getNotificationKey(sbn));
+
+        //Creo l'intent per il messaggio da mandare a chi lo vuole
+        Intent intent = new Intent(REMOVE_NOTIFICATION_ACTION);
+        intent.putExtra(NOTIFICATION_EXTRA, sbn);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     @Override
@@ -71,15 +97,28 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         Log.d(TAG, "listener connesso!");
         StatusBarNotification[] nArray = this.getActiveNotifications();
         if (nArray != null){
-            notificationList = new ArrayList<StatusBarNotification>(Arrays.asList(nArray));
+            for (StatusBarNotification sbn : nArray)
+                notificationMap.put(getNotificationKey(sbn), sbn);
         }
 
+    }
+
+    /**
+     * Gets a key to use in notification map. Made to be compatible with older android versions
+     * @param sbn a notification tu use in order to generate the key
+     * @return a notification key
+     */
+    public static String getNotificationKey(StatusBarNotification sbn) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
+            return sbn.getKey();
+        else
+            return sbn.getPackageName() + sbn.getTag() + sbn.getId();
     }
 
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (intent.getAction().equals(getString(R.string.custom_binding))){
+        if (intent.getAction().equals(CUSTOM_BINDING)){
             Log.d(TAG, "custom binding");
             return mBinder;
         }
@@ -88,4 +127,5 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             return super.onBind(intent);
         }
     }
+
 }
