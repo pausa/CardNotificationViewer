@@ -54,7 +54,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        Log.d(TAG, "arrivata notifica " + sbn.toString());
+        Log.d(TAG, "arrivata notifica " + getNotificationKey(sbn));
         super.onNotificationPosted(sbn);
         handlePostedNotification(sbn);
     }
@@ -79,19 +79,23 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     public void clearNotificationList(){
-        cancelAllNotifications();
+        //rimuovo le notifiche dalla lista solo se clearable
+        for (StatusBarNotification sbn : notificationMap.values()){
+            if (sbn.isClearable())
+                cancelNotification(sbn);
+        }
+
     }
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
+        Log.d(TAG, "rimossa notifica " + getNotificationKey(sbn));
         super.onNotificationRemoved(sbn);
         handleRemovedNotification(sbn);
     }
 
     private void handleRemovedNotification(StatusBarNotification sbn) {
-        //va rimossa solo se non è clearable
-        if (sbn.isClearable())
-            notificationMap.remove(getNotificationKey(sbn));
+        notificationMap.remove(getNotificationKey(sbn));
 
         //Creo l'intent per il messaggio da mandare a chi lo vuole
         Intent intent = new Intent(REMOVE_NOTIFICATION_ACTION);
@@ -117,12 +121,12 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      * @return a notification key
      */
     public static String getNotificationKey(StatusBarNotification sbn) {
+        //va fatto in base alla versione
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
             return sbn.getKey();
         else
             return sbn.getPackageName() + sbn.getTag() + sbn.getId();
     }
-
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -134,6 +138,15 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             Log.d(TAG,"system binding");
             return super.onBind(intent);
         }
+
+    }
+
+    public void cancelNotification (StatusBarNotification sbn){
+        //per mantenere la retrocompatibilità
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
+            super.cancelNotification(sbn.getKey());
+        else
+            super.cancelNotification(sbn.getPackageName(),sbn.getTag(),sbn.getId());
     }
 
 }
