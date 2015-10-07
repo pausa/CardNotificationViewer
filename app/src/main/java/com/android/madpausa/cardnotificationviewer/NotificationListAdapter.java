@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.DataSetObserver;
 import android.net.wifi.WifiConfiguration;
 import android.service.notification.StatusBarNotification;
+import android.text.Layout;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -83,7 +84,12 @@ public class NotificationListAdapter  extends BaseAdapter  {
             nRemote = nList.get(position).getNotification().contentView;
         Log.d(TAG, "id notifica: " + ConcreteNotificationListenerService.getNotificationKey(nList.get(position)));
 
-        View nView = nRemote.apply(context, parent);
+        //View nView = nRemote.apply(context, parent);
+        LayoutInflater inflater = LayoutInflater.from(context);
+        ViewGroup nView = (ViewGroup)inflater.inflate(R.layout.notification_list_element,parent,false);
+        nView.addView(nRemote.apply(context,parent));
+
+
         nView.setTag(nList.get(position).getNotification());
         return nView;
     }
