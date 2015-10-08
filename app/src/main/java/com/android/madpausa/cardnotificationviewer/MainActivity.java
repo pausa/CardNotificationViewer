@@ -7,19 +7,26 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.net.wifi.WifiConfiguration;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+
+import java.util.Date;
+
+import static java.lang.System.currentTimeMillis;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -44,14 +51,17 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if (sp.getBoolean(SettingsActivityFragment.TEST_MODE,false))
+            setContentView(R.layout.activity_main_test);
+        else setContentView(R.layout.activity_main);
 
         //binding del service
         Intent intent = new Intent (this, ConcreteNotificationListenerService.class);
         intent.setAction(ConcreteNotificationListenerService.CUSTOM_BINDING);
         Log.d(TAG, "Avvio il binding");
         bindService(intent, nConnection, Context.BIND_AUTO_CREATE);
-
         Log.d(TAG, "registro il receiver");
         nReceiver = new NotificationReceiver();
         IntentFilter filter = new IntentFilter();
@@ -85,6 +95,8 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent (this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
@@ -97,7 +109,8 @@ public class MainActivity extends AppCompatActivity {
         nBuilder.setSmallIcon(R.drawable.ic_notification);
 
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        nManager.notify(0, nBuilder.build());
+        Long millis = new Long(currentTimeMillis());
+        nManager.notify(millis.intValue(), nBuilder.build());
     }
 
     private ServiceConnection nConnection = new ServiceConnection() {

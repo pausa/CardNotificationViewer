@@ -9,10 +9,26 @@
         tools:layout="@layout/fragment_main" android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
         <Button
-            android:layout_width="wrap_content"
+            android:layout_weight="2"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/send_button"
+            android:onClick="sendTestNotification"/>
+        <Button
+            android:layout_weight="1"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/clear_notifications"
-            android:layout_gravity="right"
             android:onClick="clearAllNotifications"/>
+    </LinearLayout>
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/enable_service"
+        android:onClick="startNotificationServiceActivity"/>
 </LinearLayout>

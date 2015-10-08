@@ -11,8 +11,10 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +29,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     private final IBinder mBinder = new LocalBinder();
     Map<String,StatusBarNotification> notificationMap;
+    
 
 
     /**
@@ -80,7 +83,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     public void clearNotificationList(){
         //rimuovo le notifiche dalla lista solo se clearable
-        for (StatusBarNotification sbn : notificationMap.values()){
+        Collection <StatusBarNotification> nCollection = new LinkedList<StatusBarNotification> (notificationMap.values());
+        for (StatusBarNotification sbn : nCollection){
             if (sbn.isClearable())
                 cancelNotification(sbn);
         }

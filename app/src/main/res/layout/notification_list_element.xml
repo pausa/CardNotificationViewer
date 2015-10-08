@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- TODO controllare che ci sia un modo più pulito di ottener lo spazio tra le card -->
+<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:id="@+id/custom_list_item">
-</RelativeLayout>
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardListitem"
+    app:cardElevation="@dimen/notification_card_elevation" />
