@@ -2,21 +2,22 @@ package com.android.madpausa.cardnotificationviewer;
 
 import android.service.notification.StatusBarNotification;
 import android.os.Bundle;
-import android.support.v4.app.ListFragment;
-import android.util.Log;
+import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListView;
-
-import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends ListFragment  {
+public class MainActivityFragment extends Fragment {
     //adapter per le notifiche
     NotificationListAdapter notificationAdapter;
+
+    RecyclerView nRecyclerView;
+    RecyclerView.LayoutManager nLayoutManager;
 
     private static final String TAG = MainActivityFragment.class.getSimpleName();
 
@@ -29,28 +30,28 @@ public class MainActivityFragment extends ListFragment  {
 
         //caricare l'adapter
         notificationAdapter = new NotificationListAdapter(inflater.getContext());
-        setListAdapter(notificationAdapter);
+
+        nRecyclerView = (RecyclerView) inflater.inflate (R.layout.fragment_main,container,false);
+        nRecyclerView.setHasFixedSize(false);
+
+        nLayoutManager = new LinearLayoutManager(inflater.getContext());
+        nRecyclerView.setLayoutManager(nLayoutManager);
+
+        nRecyclerView.setAdapter(notificationAdapter);
 
         super.onCreateView(inflater, container, savedInstanceState);
         //inizializzare il loader
-        return inflater.inflate(R.layout.fragment_main,container,false);
+        return nRecyclerView;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        notificationAdapter.notifyDataSetChanged();
-    }
-
-    @Override
-    public void onListItemClick(ListView l, View v, int position, long id) {
-        super.onListItemClick(l, v, position, id);
-        Log.d(TAG, "ricevuta richiesta di click");
-        ((NotificationListAdapter.ViewHolder) v.getTag()).performOnClick();
+        notificationAdapter.changeDataSet();
     }
 
     public void initNotificationList (ConcreteNotificationListenerService nService){
-        notificationAdapter.setnService(nService);
+        notificationAdapter.setNotificationService(nService);
     }
 
     public void addNotification (StatusBarNotification sbn){

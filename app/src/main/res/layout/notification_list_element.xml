@@ -5,4 +5,5 @@
     android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/cardListitem"
-    app:cardElevation="@dimen/notification_card_elevation" />
+    android:layout_margin="@dimen/notification_margin">
+</android.support.v7.widget.CardView>
