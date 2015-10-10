@@ -98,8 +98,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         int threshold = Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1"));
         if (threshold < 0)
             return;
-        //TODO fare in modo che vengano considerate solo le notifiche clearable
-
+        
         Iterator<StatusBarNotification> iterator = notificationMap.values().iterator();
         while (iterator.hasNext()){
             //ottengo la notifica più vecchia sulla mappa
