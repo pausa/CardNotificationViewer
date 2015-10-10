@@ -149,6 +149,15 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
                     Log.e(TAG, "impossibile mandare l'intent");
                 }
             }
+            //rimuovo la notifica dal service, altrimenti non verrebbe rimossa sul click
+            //TODO implementare questa logica con lo swype e animazione
+            if (nService != null) {
+                Log.d (TAG, "Notifiche nel service: " + nService.getNotificationMap().size());
+                nService.cancelNotification(sbn);
+                nService.removeServiceNotification(sbn);
+                changeDataSet();
+            }
+            else Log.d(TAG, "Service null");
         }
 
         private class NotificationOnClickListener implements View.OnClickListener{

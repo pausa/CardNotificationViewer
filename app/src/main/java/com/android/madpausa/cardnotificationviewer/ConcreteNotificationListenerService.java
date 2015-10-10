@@ -1,22 +1,30 @@
 package com.android.madpausa.cardnotificationviewer;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.View;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ConcreteNotificationListenerService extends NotificationListenerService {
     private static final String TAG = ConcreteNotificationListenerService.class.getSimpleName();
@@ -25,10 +33,16 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public static final String NOTIFICATION_EXTRA = "notification";
     public static final String ADD_NOTIFICATION_ACTION = NOTIFICATION_RECEIVER + ".add_notification";
     public static final String REMOVE_NOTIFICATION_ACTION = NOTIFICATION_RECEIVER + ".remove_notification";
+    private static final String SERVICE_NOTIFICATION = ConcreteNotificationListenerService.class.getSimpleName() + ".NOTIFICATION";
 
 
     private final IBinder mBinder = new LocalBinder();
-    Map<String,StatusBarNotification> notificationMap;
+    private SharedPreferences sp = null;
+
+    LinkedHashMap<String,StatusBarNotification> notificationMap;
+    LinkedHashMap<String,StatusBarNotification> archivedNotificationMap;
+
+    Set<String> notificationsToArchive;
     
 
 
@@ -53,19 +67,26 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         super.onCreate();
         Log.d(TAG, "Creo il servizio");
         notificationMap = new LinkedHashMap<String,StatusBarNotification>();
+        archivedNotificationMap = new LinkedHashMap<String, StatusBarNotification>();
+        notificationsToArchive = new HashSet<String>();
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.d(TAG, "arrivata notifica " + getNotificationKey(sbn));
         super.onNotificationPosted(sbn);
-        handlePostedNotification(sbn);
+        if (!SERVICE_NOTIFICATION.equals(sbn.getTag()))
+            handlePostedNotification(sbn);
     }
 
     public void handlePostedNotification (StatusBarNotification sbn) {
         //la notifica deve risalire in cima alla pila
-        notificationMap.remove(getNotificationKey(sbn));
+        removeServiceNotification(sbn);
         notificationMap.put(getNotificationKey(sbn), sbn);
+
+        //in base al parametro configurato, gestisco l'extra
+        if (notificationMap.size() > Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1")))
+            archiveNotifications();
 
         //Creo l'intent per il messaggio da mandare a chi lo vuole
         Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
@@ -73,20 +94,55 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
-    public List<StatusBarNotification> getActiveNotificationsList(){
-        return new ArrayList<StatusBarNotification>(notificationMap.values());
+    private void archiveNotifications() {
+        int threshold = Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1"));
+        if (threshold < 0)
+            return;
+        //TODO fare in modo che vengano considerate solo le notifiche clearable
+
+        Iterator<StatusBarNotification> iterator = notificationMap.values().iterator();
+        while (iterator.hasNext()){
+            //ottengo la notifica più vecchia sulla mappa
+            StatusBarNotification sbn = iterator.next();
+            String nKey = getNotificationKey(sbn);
+
+            //rimuovo solo se clearable
+            if(sbn.isClearable()){
+                Log.d(TAG, "archivio notifica: " + nKey);
+
+                //la rimuovo dalla mappa principale e la aggiungo a quella delle archiviate
+                notificationMap.remove(nKey);
+                archivedNotificationMap.put(nKey, sbn);
+
+                //aggiungo a quelle da archiviare
+                notificationsToArchive.add(nKey);
+                cancelNotification(sbn);
+
+                sendServiceNotification();
+            }
+            //se il numero di notifiche è inferiore al threshold, ho finito
+            if (notificationMap.size() <= threshold)
+                break;
+        }
     }
 
     public Map<String, StatusBarNotification> getNotificationMap(){
-        return notificationMap;
+        LinkedHashMap<String, StatusBarNotification> map = new LinkedHashMap(archivedNotificationMap);
+        map.putAll(notificationMap);
+        return map;
     }
 
     public void clearNotificationList(){
         //rimuovo le notifiche dalla lista solo se clearable
-        Collection <StatusBarNotification> nCollection = new LinkedList<StatusBarNotification> (notificationMap.values());
+        Collection <StatusBarNotification> nCollection = new LinkedList<StatusBarNotification> (archivedNotificationMap.values());
+        nCollection.addAll(notificationMap.values());
         for (StatusBarNotification sbn : nCollection){
-            if (sbn.isClearable())
+            if (sbn.isClearable()){
+                //rimuovo la notifica anche direttamente, il sistema non manda la callback in caso di notifiche già rimosse
+                removeServiceNotification(sbn);
                 cancelNotification(sbn);
+            }
+
         }
 
     }
@@ -95,11 +151,12 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public void onNotificationRemoved(StatusBarNotification sbn) {
         Log.d(TAG, "rimossa notifica " + getNotificationKey(sbn));
         super.onNotificationRemoved(sbn);
-        handleRemovedNotification(sbn);
+        if(!SERVICE_NOTIFICATION.equals(sbn.getTag()))
+            handleRemovedNotification(sbn);
     }
 
     private void handleRemovedNotification(StatusBarNotification sbn) {
-        notificationMap.remove(getNotificationKey(sbn));
+        removeServiceNotification(sbn);
 
         //Creo l'intent per il messaggio da mandare a chi lo vuole
         Intent intent = new Intent(REMOVE_NOTIFICATION_ACTION);
@@ -114,7 +171,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         StatusBarNotification[] nArray = this.getActiveNotifications();
         if (nArray != null){
             for (StatusBarNotification sbn : nArray)
-                notificationMap.put(getNotificationKey(sbn), sbn);
+                handlePostedNotification(sbn);
         }
 
     }
@@ -136,6 +193,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public IBinder onBind(Intent intent) {
         if (intent.getAction().equals(CUSTOM_BINDING)){
             Log.d(TAG, "custom binding");
+            sp = PreferenceManager.getDefaultSharedPreferences(this);
             return mBinder;
         }
         else{
@@ -151,6 +209,47 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             super.cancelNotification(sbn.getKey());
         else
             super.cancelNotification(sbn.getPackageName(),sbn.getTag(),sbn.getId());
+    }
+    
+    public void removeServiceNotification(StatusBarNotification sbn){
+        String nKey = getNotificationKey(sbn);
+        notificationMap.remove(nKey);
+
+        //se la notifica non è presente nel set da archiviare, allora va rimossa anche dalle archiviate
+        if (!notificationsToArchive.remove(nKey))
+            archivedNotificationMap.remove(nKey);
+
+        //rimuovo la notifica, nel caso le archiviate finiscano
+        if (archivedNotificationMap.size() < 1)
+            removeServiceNotification();
+    }
+
+    private void sendServiceNotification (){
+        NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
+        //TODO aggiungere il numero di notifiche disponibili
+        nBuilder.setContentTitle("... more Available");
+        nBuilder.setSmallIcon(R.drawable.ic_notification);
+        NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+
+        //aggiungo l'intent per aprire l'app
+        Intent resultIntent = new Intent (this, MainActivity.class);
+
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(MainActivity.class);
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+        nBuilder.setContentIntent(resultPendingIntent);
+
+        Notification notification = nBuilder.build();
+        notification.flags |= Notification.FLAG_NO_CLEAR;
+        nManager.notify(SERVICE_NOTIFICATION, 0, notification);
+
+    }
+
+    private void removeServiceNotification(){
+        Log.d(TAG, "Rimuovo notifica del service");
+        NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        nManager.cancel(SERVICE_NOTIFICATION,0);
     }
 
 }
