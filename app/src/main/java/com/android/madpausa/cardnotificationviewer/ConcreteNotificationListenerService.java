@@ -80,25 +80,32 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     public void handlePostedNotification (StatusBarNotification sbn) {
-        //la notifica deve risalire in cima alla pila
-        removeServiceNotification(sbn);
-        notificationMap.put(getNotificationKey(sbn), sbn);
+        //alcuni casi particolari, da gestire in modo separato
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH &&
+                (sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY)
+                //se è una notifica di gruppo, non la mostro, nella main acitivity verranno mostrate notifiche separate
+                cancelNotification(sbn);
+        else {
+            //la notifica deve risalire in cima alla pila
+            removeServiceNotification(sbn);
+            notificationMap.put(getNotificationKey(sbn), sbn);
 
-        //in base al parametro configurato, gestisco l'extra
-        if (notificationMap.size() > Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1")))
-            archiveNotifications();
+            //in base al parametro configurato, gestisco l'extra
+            if (notificationMap.size() > Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1")))
+                archiveNotifications();
 
-        //Creo l'intent per il messaggio da mandare a chi lo vuole
-        Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
-        intent.putExtra(NOTIFICATION_EXTRA, sbn);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+            //Creo l'intent per il messaggio da mandare a chi lo vuole
+            Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
+            intent.putExtra(NOTIFICATION_EXTRA, sbn);
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        }
     }
 
     private void archiveNotifications() {
         int threshold = Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1"));
         if (threshold < 0)
             return;
-        
+
         Iterator<StatusBarNotification> iterator = notificationMap.values().iterator();
         while (iterator.hasNext()){
             //ottengo la notifica più vecchia sulla mappa
@@ -225,8 +232,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     private void sendServiceNotification (){
         NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
-        //TODO aggiungere il numero di notifiche disponibili
-        nBuilder.setContentTitle("... more Available");
+
+        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text),archivedNotificationMap.size()));
         nBuilder.setSmallIcon(R.drawable.ic_notification);
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 

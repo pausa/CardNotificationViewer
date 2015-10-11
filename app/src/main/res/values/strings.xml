@@ -10,8 +10,9 @@
     <string name="clear_notifications">Clear List</string>
     <string name="pref_notification_threshold_title">Notification Threshold</string>
     <string name="pref_notification_threshold_default">3</string>
-    <string name="pref_notification_threshold_summary">%1$s notifications</string>
+    <string name="pref_notification_threshold_summary">"%1$s notifications"</string>
     <string name="pref_test_mode_default">false</string>
     <string name="pref_test_mode_title">Debug Mode</string>
     <string name="title_activity_settings">Settings</string>
+    <string name="service_notification_text">%d More Notifications</string>
 </resources>
