@@ -77,6 +77,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         if (isInvertedBackground(sbn))
             holder.getCardView().setBackgroundColor(getColor(R.color.cardview_dark_background));
         else holder.getCardView().setBackgroundColor(getColor(R.color.cardview_light_background));
+        //holder.getCardView().setBackgroundColor(getColor(sbn.getNotification().color));
 
         holder.setSbn(sbn);
         holder.getCardView().addView(nRemote.apply(context, holder.getCardView()));
@@ -84,7 +85,11 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         if(sp.getBoolean(SettingsActivityFragment.TEST_MODE,false)) {
             TextView debugText = new TextView(context);
-            debugText.setText(ConcreteNotificationListenerService.getNotificationKey(sbn));
+            debugText.setText("id: " + sbn.getId() + "\n");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                debugText.setText(debugText.getText() + "group: " + sbn.getGroupKey() + "\n");
+            debugText.setText(debugText.getText() + "color: " + sbn.getNotification().color + "\n");
+            debugText.setText(debugText.getText() + "tag: " + sbn.getTag() + "\n");
             debugText.setTextColor(getColor(R.color.red));
             holder.getCardView().addView(debugText);
         }
@@ -140,6 +145,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         }
 
         public void performOnClick(){
+            //TODO aprire un dialog con le notifiche grouppate
             PendingIntent pendingIntent = sbn.getNotification().contentIntent;
             Log.d(TAG, "intent della notifica: " + pendingIntent);
             if (pendingIntent != null) {

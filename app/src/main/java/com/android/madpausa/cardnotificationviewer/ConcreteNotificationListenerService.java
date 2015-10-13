@@ -81,11 +81,11 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     public void handlePostedNotification (StatusBarNotification sbn) {
         //alcuni casi particolari, da gestire in modo separato
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH &&
+       /* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH &&
                 (sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY)
-                //se è una notifica di gruppo, non la mostro, nella main acitivity verranno mostrate notifiche separate
-                cancelNotification(sbn);
-        else {
+                //TODO se è una notifica di gruppo, non la gestisco. Non posso cancellarla però, altrimenti perdo altre notifiche... va capito cosa farci
+            ;
+        else {*/
             //la notifica deve risalire in cima alla pila
             removeServiceNotification(sbn);
             notificationMap.put(getNotificationKey(sbn), sbn);
@@ -98,7 +98,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
             intent.putExtra(NOTIFICATION_EXTRA, sbn);
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        }
+        //}
     }
 
     private void archiveNotifications() {
@@ -197,9 +197,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     @Override
     public IBinder onBind(Intent intent) {
+        sp = PreferenceManager.getDefaultSharedPreferences(this);
         if (intent.getAction().equals(CUSTOM_BINDING)){
             Log.d(TAG, "custom binding");
-            sp = PreferenceManager.getDefaultSharedPreferences(this);
             return mBinder;
         }
         else{
@@ -233,7 +233,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     private void sendServiceNotification (){
         NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
 
-        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text),archivedNotificationMap.size()));
+        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), archivedNotificationMap.size()));
         nBuilder.setSmallIcon(R.drawable.ic_notification);
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -257,5 +257,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         nManager.cancel(SERVICE_NOTIFICATION,0);
     }
+    public void hideNotification (StatusBarNotification sbn){
+        //TODO trovare un modo di implementare questo metodo
 
+    }
 }
