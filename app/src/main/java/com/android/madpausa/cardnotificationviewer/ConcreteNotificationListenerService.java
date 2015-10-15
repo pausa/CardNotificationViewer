@@ -1,5 +1,6 @@
 package com.android.madpausa.cardnotificationviewer;
 
+import android.app.INotificationManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,14 +11,16 @@ import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.view.View;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -80,12 +83,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     public void handlePostedNotification (StatusBarNotification sbn) {
-        //alcuni casi particolari, da gestire in modo separato
-       /* if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH &&
-                (sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY)
-                //TODO se è una notifica di gruppo, non la gestisco. Non posso cancellarla però, altrimenti perdo altre notifiche... va capito cosa farci
-            ;
-        else {*/
+       //la notifica va gestita solo se non da archiviare
+        if (!notificationsToArchive.remove(getNotificationKey(sbn))){
             //la notifica deve risalire in cima alla pila
             removeServiceNotification(sbn);
             notificationMap.put(getNotificationKey(sbn), sbn);
@@ -98,7 +97,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
             intent.putExtra(NOTIFICATION_EXTRA, sbn);
             LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        //}
+        }
     }
 
     private void archiveNotifications() {
@@ -120,9 +119,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
                 notificationMap.remove(nKey);
                 archivedNotificationMap.put(nKey, sbn);
 
-                //aggiungo a quelle da archiviare
-                notificationsToArchive.add(nKey);
-                cancelNotification(sbn);
+                hideNotification(sbn);
 
                 sendServiceNotification();
             }
@@ -222,8 +219,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         notificationMap.remove(nKey);
 
         //se la notifica non è presente nel set da archiviare, allora va rimossa anche dalle archiviate
-        if (!notificationsToArchive.remove(nKey))
-            archivedNotificationMap.remove(nKey);
+        archivedNotificationMap.remove(nKey);
 
         //rimuovo la notifica, nel caso le archiviate finiscano
         if (archivedNotificationMap.size() < 1)
@@ -233,7 +229,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     private void sendServiceNotification (){
         NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
 
-        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), archivedNotificationMap.size()));
+        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), archivedNotificationMap.size() + notificationMap.size()));
         nBuilder.setSmallIcon(R.drawable.ic_notification);
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -245,11 +241,10 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         stackBuilder.addNextIntent(resultIntent);
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         nBuilder.setContentIntent(resultPendingIntent);
-
+        nBuilder.setPriority(Notification.PRIORITY_HIGH);
         Notification notification = nBuilder.build();
         notification.flags |= Notification.FLAG_NO_CLEAR;
         nManager.notify(SERVICE_NOTIFICATION, 0, notification);
-
     }
 
     private void removeServiceNotification(){
@@ -257,8 +252,42 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         nManager.cancel(SERVICE_NOTIFICATION,0);
     }
-    public void hideNotification (StatusBarNotification sbn){
-        //TODO trovare un modo di implementare questo metodo
 
+    /**
+     * for now it will lower the priority of the notification
+     * @param sbn the notification to lower
+     */
+    public void hideNotification (StatusBarNotification sbn){
+        //TODO trovare un modo legale
+        int[] idOut = new int[1];
+
+        sbn.getNotification().priority= Notification.PRIORITY_MIN;
+        //aggiungo a quelle da archiviare
+        //notificationsToArchive.add(getNotificationKey(sbn));
+        //INotificationManagerReflected nManager = new INotificationManagerReflected();
+        //nManager.enqueueNotificationWithTag(sbn.getPackageName(), sbn.getPackageName(), sbn.getTag(), sbn.getId(), sbn.getNotification(),idOut, sbn.getNotification().hashCode());
+    }
+
+    /**
+     * this class wraps the reflected NotificationManager instance
+     */
+    private class INotificationManagerReflected{
+        INotificationManager iNotificationManager;
+        NotificationManager nManager;
+        public INotificationManagerReflected(){
+
+            nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+            iNotificationManager = NotificationManager.getService();
+
+        }
+        public void enqueueNotificationWithTag(String pkg, String opPkg, String tag, int id,  Notification notification,  int[] idReceived, int userId)
+        {
+            try {
+                iNotificationManager.enqueueNotificationWithTag(pkg, opPkg, tag, id, notification, idReceived, userId);
+            } catch (Exception e) {
+                Log.e(TAG, "errore su enqueueNotificationWithTag!");
+                e.printStackTrace();
+            }
+        }
     }
 }

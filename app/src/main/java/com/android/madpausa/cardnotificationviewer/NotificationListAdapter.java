@@ -1,5 +1,7 @@
 package com.android.madpausa.cardnotificationviewer;
 
+import android.annotation.TargetApi;
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -103,9 +105,16 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     public void changeDataSet() {
         //va aggiornata prima la lista, altrimenti potrebbero essere resituiti risultati non aggiornati
         //la lista viene aggiornata in modo che le notifiche più recenti siano in cima
+        //TODO gestire bene i gruppi e i summary
         nList = new ArrayList<StatusBarNotification>();
         if (nService != null)
-            for (StatusBarNotification sbn : nService.getNotificationMap().values()) nList.add(0, sbn);
+            for (StatusBarNotification sbn : nService.getNotificationMap().values()){
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH &&
+                        (sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY)
+                    continue;
+                else
+                    nList.add(0, sbn);
+            }
 
         super.notifyDataSetChanged();
 
@@ -120,8 +129,10 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         return false;
     }
 
+
     private int getColor (int id){
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M)
+        //TODO aggiustare quando preparo il completo per lollipop
+        if (Build.VERSION.SDK_INT < 23)
             return context.getResources().getColor(id);
         else
             return context.getResources().getColor(id,null);

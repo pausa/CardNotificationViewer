@@ -1,5 +1,6 @@
 package com.android.madpausa.cardnotificationviewer;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -108,9 +109,12 @@ public class MainActivity extends AppCompatActivity {
         nBuilder.setContentText("This is just a test");
         nBuilder.setSmallIcon(R.drawable.ic_notification);
 
+        Notification notification = nBuilder.build();
+
+
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         Long millis = new Long(currentTimeMillis());
-        nManager.notify(millis.intValue(), nBuilder.build());
+        nManager.notify(millis.intValue(), notification);
     }
 
     private ServiceConnection nConnection = new ServiceConnection() {
