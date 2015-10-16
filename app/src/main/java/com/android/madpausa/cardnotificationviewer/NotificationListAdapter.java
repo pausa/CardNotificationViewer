@@ -18,6 +18,7 @@ import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -105,16 +106,19 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     public void changeDataSet() {
         //va aggiornata prima la lista, altrimenti potrebbero essere resituiti risultati non aggiornati
         //la lista viene aggiornata in modo che le notifiche più recenti siano in cima
-        //TODO gestire bene i gruppi e i summary
+        //TODO gestire bene i gruppi e i summary per ora aggiungo alla lista solo se il summary è l'unica notifica per il gruppo
         nList = new ArrayList<StatusBarNotification>();
-        if (nService != null)
-            for (StatusBarNotification sbn : nService.getNotificationMap().values()){
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH &&
-                        (sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY)
+
+        if (nService != null){
+            Collection<StatusBarNotification> notifications = nService.getNotificationMap().values();
+            NotificationGroup nGroup = new NotificationGroup(notifications);
+            for (StatusBarNotification sbn : notifications){
+                if (nGroup.getGroupSummary(sbn.getGroupKey()) != null && nGroup.groupSize(sbn.getGroupKey()) > 1)
                     continue;
                 else
                     nList.add(0, sbn);
             }
+        }
 
         super.notifyDataSetChanged();
 
@@ -171,7 +175,6 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             if (nService != null) {
                 Log.d (TAG, "Notifiche nel service: " + nService.getNotificationMap().size());
                 nService.cancelNotification(sbn);
-                nService.removeServiceNotification(sbn);
                 changeDataSet();
             }
             else Log.d(TAG, "Service null");

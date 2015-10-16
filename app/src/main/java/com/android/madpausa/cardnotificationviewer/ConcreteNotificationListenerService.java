@@ -241,7 +241,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         stackBuilder.addNextIntent(resultIntent);
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         nBuilder.setContentIntent(resultPendingIntent);
-        nBuilder.setPriority(Notification.PRIORITY_HIGH);
+        nBuilder.setPriority(Notification.PRIORITY_MIN);
         Notification notification = nBuilder.build();
         notification.flags |= Notification.FLAG_NO_CLEAR;
         nManager.notify(SERVICE_NOTIFICATION, 0, notification);
@@ -259,35 +259,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      */
     public void hideNotification (StatusBarNotification sbn){
         //TODO trovare un modo legale
-        int[] idOut = new int[1];
-
-        sbn.getNotification().priority= Notification.PRIORITY_MIN;
-        //aggiungo a quelle da archiviare
-        //notificationsToArchive.add(getNotificationKey(sbn));
-        //INotificationManagerReflected nManager = new INotificationManagerReflected();
-        //nManager.enqueueNotificationWithTag(sbn.getPackageName(), sbn.getPackageName(), sbn.getTag(), sbn.getId(), sbn.getNotification(),idOut, sbn.getNotification().hashCode());
     }
 
-    /**
-     * this class wraps the reflected NotificationManager instance
-     */
-    private class INotificationManagerReflected{
-        INotificationManager iNotificationManager;
-        NotificationManager nManager;
-        public INotificationManagerReflected(){
 
-            nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-            iNotificationManager = NotificationManager.getService();
-
-        }
-        public void enqueueNotificationWithTag(String pkg, String opPkg, String tag, int id,  Notification notification,  int[] idReceived, int userId)
-        {
-            try {
-                iNotificationManager.enqueueNotificationWithTag(pkg, opPkg, tag, id, notification, idReceived, userId);
-            } catch (Exception e) {
-                Log.e(TAG, "errore su enqueueNotificationWithTag!");
-                e.printStackTrace();
-            }
-        }
-    }
 }

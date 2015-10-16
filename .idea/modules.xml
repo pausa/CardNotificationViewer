@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CardNotificationViewer.iml" filepath="$PROJECT_DIR$/CardNotificationViewer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/XposedBridgeApi/XposedBridgeApi.iml" filepath="$PROJECT_DIR$/XposedBridgeApi/XposedBridgeApi.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
