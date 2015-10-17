@@ -108,22 +108,18 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             StatusBarNotification sbn = iterator.next();
             String nKey = getNotificationKey(sbn);
 
-            //rimuovo solo se clearable
-            //if(sbn.isClearable()){
-                Log.d(TAG, "archivio notifica: " + nKey);
+            Log.d(TAG, "archivio notifica: " + nKey);
 
-                //la rimuovo dalla mappa principale e la aggiungo a quella delle archiviate
-                notificationMap.remove(nKey);
-                archivedNotificationMap.put(nKey, sbn);
+            //la rimuovo dalla mappa principale e la aggiungo a quella delle archiviate
+            notificationMap.remove(nKey);
+            archivedNotificationMap.put(nKey, sbn);
 
-                hideNotification(sbn);
-
-                sendServiceNotification();
-            //}
-            //se il numero di notifiche è inferiore al threshold, ho finito
+            hideNotification(sbn);
+        //se il numero di notifiche è inferiore al threshold, ho finito
             if (notificationMap.size() <= threshold)
                 break;
         }
+        sendServiceNotification();
     }
 
     public Map<String, StatusBarNotification> getNotificationMap(){
@@ -171,7 +167,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         StatusBarNotification[] nArray = this.getActiveNotifications();
         if (nArray != null){
             for (StatusBarNotification sbn : nArray)
-                handlePostedNotification(sbn);
+                if(!SERVICE_NOTIFICATION.equals(sbn.getTag()))
+                    handlePostedNotification(sbn);
         }
 
     }
@@ -240,7 +237,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         stackBuilder.addNextIntent(resultIntent);
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         nBuilder.setContentIntent(resultPendingIntent);
-        nBuilder.setPriority(Notification.PRIORITY_LOW);
+        nBuilder.setPriority(Notification.PRIORITY_MIN);
         Notification notification = nBuilder.build();
         notification.flags |= Notification.FLAG_NO_CLEAR;
         nManager.notify(SERVICE_NOTIFICATION, 0, notification);

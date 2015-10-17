@@ -1,7 +1,6 @@
 package com.android.madpausa.cardnotificationviewer;
 
 import android.app.Notification;
-import android.net.wifi.p2p.nsd.WifiP2pServiceResponse;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
 
