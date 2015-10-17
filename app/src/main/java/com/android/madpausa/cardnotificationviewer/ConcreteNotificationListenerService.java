@@ -1,6 +1,5 @@
 package com.android.madpausa.cardnotificationviewer;
 
-import android.app.INotificationManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,7 +10,6 @@ import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -19,8 +17,6 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,7 +32,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public static final String NOTIFICATION_EXTRA = "notification";
     public static final String ADD_NOTIFICATION_ACTION = NOTIFICATION_RECEIVER + ".add_notification";
     public static final String REMOVE_NOTIFICATION_ACTION = NOTIFICATION_RECEIVER + ".remove_notification";
-    private static final String SERVICE_NOTIFICATION = ConcreteNotificationListenerService.class.getSimpleName() + ".NOTIFICATION";
+    public static final String SERVICE_NOTIFICATION = ConcreteNotificationListenerService.class.getSimpleName() + ".NOTIFICATION";
+    public static final String ARCHIVED_NOTIFICATIONS_EXTRA = "ARCHIVED_NOTIFICATIONS_EXTRA";
 
 
     private final IBinder mBinder = new LocalBinder();
@@ -112,7 +109,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
             String nKey = getNotificationKey(sbn);
 
             //rimuovo solo se clearable
-            if(sbn.isClearable()){
+            //if(sbn.isClearable()){
                 Log.d(TAG, "archivio notifica: " + nKey);
 
                 //la rimuovo dalla mappa principale e la aggiungo a quella delle archiviate
@@ -122,7 +119,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
                 hideNotification(sbn);
 
                 sendServiceNotification();
-            }
+            //}
             //se il numero di notifiche è inferiore al threshold, ho finito
             if (notificationMap.size() <= threshold)
                 break;
@@ -224,6 +221,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         //rimuovo la notifica, nel caso le archiviate finiscano
         if (archivedNotificationMap.size() < 1)
             removeServiceNotification();
+        else sendServiceNotification();
     }
 
     private void sendServiceNotification (){
@@ -235,13 +233,14 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
         //aggiungo l'intent per aprire l'app
         Intent resultIntent = new Intent (this, MainActivity.class);
+        resultIntent.putExtra(ARCHIVED_NOTIFICATIONS_EXTRA,new HashSet<>(archivedNotificationMap.keySet()));
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(MainActivity.class);
         stackBuilder.addNextIntent(resultIntent);
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         nBuilder.setContentIntent(resultPendingIntent);
-        nBuilder.setPriority(Notification.PRIORITY_MIN);
+        nBuilder.setPriority(Notification.PRIORITY_LOW);
         Notification notification = nBuilder.build();
         notification.flags |= Notification.FLAG_NO_CLEAR;
         nManager.notify(SERVICE_NOTIFICATION, 0, notification);

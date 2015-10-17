@@ -113,7 +113,9 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             Collection<StatusBarNotification> notifications = nService.getNotificationMap().values();
             NotificationGroup nGroup = new NotificationGroup(notifications);
             for (StatusBarNotification sbn : notifications){
-                if (nGroup.getGroupSummary(sbn.getGroupKey()) != null && nGroup.groupSize(sbn.getGroupKey()) > 1)
+                if (nGroup.getGroupSummary(sbn.getGroupKey()) != null
+                        && nGroup.getGroupSummary(sbn.getGroupKey()).equals(ConcreteNotificationListenerService.getNotificationKey(sbn))
+                        && nGroup.groupSize(sbn.getGroupKey()) > 1)
                     continue;
                 else
                     nList.add(0, sbn);
