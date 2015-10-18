@@ -16,14 +16,10 @@ import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 public class ConcreteNotificationListenerService extends NotificationListenerService {
     private static final String TAG = ConcreteNotificationListenerService.class.getSimpleName();
@@ -47,6 +43,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     NotificationGroup notificationGroups;
+    NotificationFilter notificationFilter;
 
 
     /**
@@ -68,9 +65,10 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     @Override
     public void onCreate() {
         super.onCreate();
-        notificationMap = new LinkedHashMap<String,StatusBarNotification>();
-        archivedNotificationMap = new LinkedHashMap<String, StatusBarNotification>();
+        notificationMap = new LinkedHashMap<>();
+        archivedNotificationMap = new LinkedHashMap<>();
         notificationGroups = new NotificationGroup();
+        notificationFilter = new NotificationFilter();
     }
 
     @Override
@@ -81,9 +79,15 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     public void handlePostedNotification (StatusBarNotification sbn) {
-        //should be removed if already existing, in order to put it back in the non archived notifications
+        //should be removed if already existing, in order to put it back in top position
         removeServiceNotification(sbn);
-        notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
+
+        //if the notification has to be shown, is putted in the primary map
+        if (notificationFilter.matchFilter(sbn,notificationGroups,true))
+            notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
+        else
+        //otherwise, it goes directly in the archived ones
+            archivedNotificationMap.put(NotificationFilter.getNotificationKey(sbn),sbn);
 
         //adding it to the group structure
         notificationGroups.addGroupMember(sbn);
@@ -103,10 +107,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         if (threshold < 0)
             return;
 
-        Iterator<StatusBarNotification> iterator = notificationMap.values().iterator();
-        while (iterator.hasNext()){
+        for (StatusBarNotification sbn : notificationMap.values()) {
             //getting the older notification
-            StatusBarNotification sbn = iterator.next();
             String nKey = NotificationFilter.getNotificationKey(sbn);
 
             //moving the notification in the archived ones
@@ -127,7 +129,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     //returning a map containing all the notifications, because it's linked, the order is preserved
     public LinkedHashMap<String, StatusBarNotification> getNotificationMap(){
-        LinkedHashMap<String, StatusBarNotification> map = new LinkedHashMap(archivedNotificationMap);
+        LinkedHashMap<String, StatusBarNotification> map = new LinkedHashMap<>(archivedNotificationMap);
         map.putAll(notificationMap);
         return map;
     }
@@ -137,7 +139,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      */
     public void clearNotificationList(){
 
-        LinkedList<StatusBarNotification> nCollection = new LinkedList<StatusBarNotification> (archivedNotificationMap.values());
+        LinkedList<StatusBarNotification> nCollection = new LinkedList<> (archivedNotificationMap.values());
         nCollection.addAll(notificationMap.values());
 
         for (StatusBarNotification sbn : nCollection){
@@ -203,8 +205,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     /**
      * helper class, cancels given notification from system. Should be compatible with all android versions
-     * @param sbn
+     * @param sbn the notification to cancel
      */
+    @SuppressWarnings("deprecation")
     public void cancelNotification (StatusBarNotification sbn){
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
@@ -215,7 +218,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     /**
      * removes notification from this service only
-     * @param sbn
+     * @param sbn the notification to be removed from service
      */
     public void removeServiceNotification(StatusBarNotification sbn){
         String nKey = NotificationFilter.getNotificationKey(sbn);
@@ -239,41 +242,51 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      * sends the service notification
      */
     private void sendServiceNotification (){
-        NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
 
-        //creating a default filter, meaning it will filter out all non summary notifications
-        NotificationFilter nFilter = new NotificationFilter();
-        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), nFilter.applyFilter(archivedNotificationMap.values(),notificationGroups,true).size()));
+        //filtering archived notification list
+        List<StatusBarNotification> filteredArchivedNotificationList = notificationFilter.applyFilter(archivedNotificationMap.values(), notificationGroups, true);
+        int filteredArchiveddSize = filteredArchivedNotificationList.size();
 
-        nBuilder.setSmallIcon(R.drawable.ic_notification);
-        //gets the correct color resource, based on android version
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-            nBuilder.setColor(getResources().getColor(R.color.app_background,null));
-        else nBuilder.setColor(getResources().getColor(R.color.app_background));
+        //should show notification only if there are notifications to be shown
+        if (filteredArchiveddSize > 0) {
+            NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
 
-        NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+            nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), filteredArchiveddSize));
 
-        //setting the intent
-        Intent resultIntent = new Intent (this, MainActivity.class);
+            nBuilder.setSmallIcon(R.drawable.ic_notification);
+            //gets the correct color resource, based on android version
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                nBuilder.setColor(getResources().getColor(R.color.app_background, null));
+            else //noinspection deprecation
+                nBuilder.setColor(getResources().getColor(R.color.app_background));
 
-        //setting the extra containing the archived notifications
-        resultIntent.putExtra(ARCHIVED_NOTIFICATIONS_EXTRA,new HashSet<>(archivedNotificationMap.keySet()));
+            NotificationManager nManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
-        stackBuilder.addParentStack(MainActivity.class);
-        stackBuilder.addNextIntent(resultIntent);
+            //setting the intent
+            Intent resultIntent = new Intent(this, MainActivity.class);
 
-        PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
-        nBuilder.setContentIntent(resultPendingIntent);
+            //setting the extra containing the archived notifications
+            resultIntent.putExtra(ARCHIVED_NOTIFICATIONS_EXTRA, new HashSet<>(archivedNotificationMap.keySet()));
 
-        //low priority, not min, as it has to show in the lockscreen
-        nBuilder.setPriority(Notification.PRIORITY_LOW);
+            TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+            stackBuilder.addParentStack(MainActivity.class);
+            stackBuilder.addNextIntent(resultIntent);
 
-        Notification notification = nBuilder.build();
+            PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+            nBuilder.setContentIntent(resultPendingIntent);
 
-        //this notification should be sticky
-        notification.flags |= Notification.FLAG_NO_CLEAR;
-        nManager.notify(SERVICE_NOTIFICATION, 0, notification);
+            //low priority, not min, as it has to show in the lockscreen
+            nBuilder.setPriority(Notification.PRIORITY_LOW);
+
+            Notification notification = nBuilder.build();
+
+            //this notification should be sticky
+            notification.flags |= Notification.FLAG_NO_CLEAR;
+            nManager.notify(SERVICE_NOTIFICATION, 0, notification);
+        }
+        //else I should remove the notification
+        else
+            removeServiceNotification();
     }
 
     private void removeServiceNotification(){
@@ -285,7 +298,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      * Should hide the given notification from the statusBar. Unimplemented for now. Xposed is handling it at the moment
      * @param sbn the notification to lower
      */
-    @Deprecated
+    @SuppressWarnings("UnusedParameters")
     public void hideNotification (StatusBarNotification sbn){
         //TODO find a legit way, even using root
     }
