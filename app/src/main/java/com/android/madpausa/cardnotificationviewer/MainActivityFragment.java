@@ -19,8 +19,6 @@ public class MainActivityFragment extends Fragment {
     RecyclerView nRecyclerView;
     RecyclerView.LayoutManager nLayoutManager;
 
-    private static final String TAG = MainActivityFragment.class.getSimpleName();
-
     public MainActivityFragment() {
     }
 

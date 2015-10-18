@@ -9,8 +9,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiConfiguration;
-import android.os.Binder;
 import android.os.IBinder;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
@@ -19,13 +17,10 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-
-import java.util.Date;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -111,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        Long millis = new Long(currentTimeMillis());
+        Long millis = currentTimeMillis();
         nManager.notify(millis.intValue(), notification);
     }
 

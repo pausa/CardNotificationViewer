@@ -12,6 +12,8 @@ import java.util.List;
 
 /**
  * Created by Pausa on 18/10/2015.
+ *
+ * this class represents a filter to apply to notifications, in order to show only specific ones
  */
 public class NotificationFilter implements Parcelable {
     boolean showChildern;
@@ -84,27 +86,24 @@ public class NotificationFilter implements Parcelable {
     }
     public static boolean isSummary (StatusBarNotification sbn) {
         //va fatto in base alla versione
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
-                return (sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY;
-
-        return false;
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH && ((sbn.getNotification().flags & Notification.FLAG_GROUP_SUMMARY) == Notification.FLAG_GROUP_SUMMARY);
     }
 
     /**
      * tries to apply this filter to the given notification
      * @param sbn the notification to check
-     * @param notificationGroup  the notification group to check groups with, needed for summaries filtering
+     * @param notificationGroups  the notification group to check groups with, needed for summaries filtering
      * @param exact defines the behaviour for string filters, if set to false it will check if the filter is a substring of the notification field
      * @return true if notification matches the filter
      */
-    public boolean matchFilter (StatusBarNotification sbn, NotificationGroup notificationGroup, boolean exact){
-        //these mean something, only if a NotificationGroup is passed
-        if (notificationGroup != null) {
+    public boolean matchFilter (StatusBarNotification sbn, NotificationGroups notificationGroups, boolean exact){
+        //these mean something, only if a NotificationGroups is passed
+        if (notificationGroups != null) {
             if (!showSummary && isSummary(sbn))
                 return false;
 
             //to be a child, it has to be in a group with a summary
-            if (notificationGroup.getGroupSummary(sbn.getGroupKey()) != null)
+            if (notificationGroups.getGroupSummary(sbn.getGroupKey()) != null)
                 if (!showChildern && !isSummary(sbn))
                     return false;
         }
@@ -156,44 +155,50 @@ public class NotificationFilter implements Parcelable {
 
     /**
      * applies this filter to the given notification list
-     * @param notificationList
-     * @param notificationGroup
+     * @param notificationList the list to filter
+     * @param notificationGroups the group information in order to apply group filters
      * @param exact defines the behaviour for string filters, if set to false it will check if the filter is a substring of the notification field
      * @return the filtered notification list
      */
-    public List<StatusBarNotification> applyFilter (Collection<StatusBarNotification> notificationList, NotificationGroup notificationGroup, boolean exact){
+    public List<StatusBarNotification> applyFilter (Collection<StatusBarNotification> notificationList, NotificationGroups notificationGroups, boolean exact){
         ArrayList<StatusBarNotification> filteredList = new ArrayList<>();
         for (StatusBarNotification sbn : notificationList)
-            if (matchFilter(sbn, notificationGroup, exact))
+            if (matchFilter(sbn, notificationGroups, exact))
                 filteredList.add(sbn);
         return filteredList;
     }
     //setters
+    @SuppressWarnings("unused")
     public NotificationFilter setShowChildern(boolean showChildern) {
         this.showChildern = showChildern;
         return this;
     }
 
+    @SuppressWarnings("unused")
     public NotificationFilter setShowSummary(boolean showSummary) {
         this.showSummary = showSummary;
         return this;
     }
 
+    @SuppressWarnings("unused")
     public NotificationFilter setGroupFilter(String groupFilter) {
         this.groupFilter = groupFilter;
         return this;
     }
 
+    @SuppressWarnings("unused")
     public NotificationFilter setTagFilter(String tagFilter) {
         this.tagFilter = tagFilter;
         return this;
     }
 
+    @SuppressWarnings("unused")
     public NotificationFilter setKeyFilter(String keyFilter) {
         this.keyFilter = keyFilter;
         return this;
     }
 
+    @SuppressWarnings("unused")
     public NotificationFilter setPkgFilter(String pkgFilter) {
         this.pkgFilter = pkgFilter;
         return this;

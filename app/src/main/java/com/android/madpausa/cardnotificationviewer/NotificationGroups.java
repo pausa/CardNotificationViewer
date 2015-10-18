@@ -1,7 +1,5 @@
 package com.android.madpausa.cardnotificationviewer;
 
-import android.app.Notification;
-import android.os.Build;
 import android.service.notification.StatusBarNotification;
 
 import java.util.Collection;
@@ -12,21 +10,24 @@ import java.util.Set;
 
 /**
  * Created by antpetre on 16/10/2015.
+ *
+ * this class stores information about notification groups, such as members and summaries.
  */
-public class NotificationGroup {
+public class NotificationGroups {
     Map<String,Set<String>> groups;
     Map<String,String> summaries;
 
-    public NotificationGroup(){
+    public NotificationGroups(){
         groups = new HashMap<>();
         summaries = new HashMap<>();
     }
 
     /***
      * creates a notification group structure from given notifications
-     * @param notifications
+     * @param notifications the notifications to be used to populate the grups information
      */
-    public NotificationGroup(Collection<StatusBarNotification> notifications){
+    @SuppressWarnings("unused")
+    public NotificationGroups(Collection<StatusBarNotification> notifications){
         this();
         for (StatusBarNotification sbn : notifications)
             addGroupMember(sbn);
@@ -37,6 +38,7 @@ public class NotificationGroup {
      * @param group should be the return value of StatusBarNotification.getGroupKey()
      * @return a string set of notification keys
      */
+    @SuppressWarnings("unused")
     public Set<String> getGroupMembers(String group){
         if (group == null)
             return null;
@@ -57,7 +59,7 @@ public class NotificationGroup {
 
     /**
      * adds the notification to the corrisponding group
-     * @param sbn
+     * @param sbn the notification to be added
      */
     public void addGroupMember (StatusBarNotification sbn){
         //if it has no groupKey, then it's part of no group, so nothing to do
@@ -80,6 +82,7 @@ public class NotificationGroup {
             summaries.put(sbn.getGroupKey(),nKey);
     }
 
+    @SuppressWarnings("unused")
     public int groupSize (String group){
         if (group == null)
             return 0;
@@ -92,7 +95,7 @@ public class NotificationGroup {
 
     /**
      * removes the current notification from the groups
-     * @param sbn
+     * @param sbn the notification to be removed
      */
     public void removeGroupMember (StatusBarNotification sbn){
         //if it has no groupKey, then it's part of no group, so nothing to do

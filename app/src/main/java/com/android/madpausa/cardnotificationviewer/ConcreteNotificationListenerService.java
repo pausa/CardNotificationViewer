@@ -38,11 +38,11 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     LinkedHashMap<String,StatusBarNotification> notificationMap;
     LinkedHashMap<String,StatusBarNotification> archivedNotificationMap;
 
-    public NotificationGroup getNotificationGroups() {
+    public NotificationGroups getNotificationGroups() {
         return notificationGroups;
     }
 
-    NotificationGroup notificationGroups;
+    NotificationGroups notificationGroups;
     NotificationFilter notificationFilter;
 
 
@@ -67,7 +67,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         super.onCreate();
         notificationMap = new LinkedHashMap<>();
         archivedNotificationMap = new LinkedHashMap<>();
-        notificationGroups = new NotificationGroup();
+        notificationGroups = new NotificationGroups();
         notificationFilter = new NotificationFilter();
     }
 
@@ -106,7 +106,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         int threshold = Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1"));
         if (threshold < 0)
             return;
-
+        //TODO as there might be times in which this logic won't work properly, I should firstly archive non summary notifications in the main map.
         for (StatusBarNotification sbn : notificationMap.values()) {
             //getting the older notification
             String nKey = NotificationFilter.getNotificationKey(sbn);

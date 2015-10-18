@@ -1,7 +1,5 @@
 package com.android.madpausa.cardnotificationviewer;
 
-import android.annotation.TargetApi;
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -116,7 +114,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
         if (nService != null){
             Collection<StatusBarNotification> notifications = nService.getNotificationMap().values();
-            NotificationGroup nGroup = nService.getNotificationGroups();
+            NotificationGroups nGroup = nService.getNotificationGroups();
 
             for (StatusBarNotification sbn : notifications){
                 //if matches filter, adding it to the list

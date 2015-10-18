@@ -4,10 +4,8 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
-
 import java.util.Map;
 import java.util.Set;
-
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
@@ -17,6 +15,8 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
 /**
  * Created by antpetre on 16/10/2015.
+ *
+ * Xposed module to handle the notification hiding
  */
 public class NotificationDataXposed implements IXposedHookLoadPackage {
     static final String packageName = "com.android.systemui";
@@ -43,6 +43,7 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
                 StatusBarNotification sbnParam = (StatusBarNotification)param.args[0];
                 if (archivedNotifications != null && archivedNotifications.contains(NotificationFilter.getNotificationKey(sbnParam))) {
                     param.setResult(true);
+                    //noinspection UnnecessaryReturnStatement Xposed javadoc says I should return
                     return;
                 }
             }
@@ -91,8 +92,9 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
-                String keyParam = (String)param.args[0];;
-                Map<String,Object> mEntries = (Map)XposedHelpers.getObjectField(param.thisObject,"mEntries");
+                String keyParam = (String)param.args[0];
+
+                @SuppressWarnings("unchecked") Map<String,Object> mEntries = (Map<String,Object>)XposedHelpers.getObjectField(param.thisObject,"mEntries");
                 Object entry = mEntries.get(keyParam);
                 if (entry != null){
                     StatusBarNotification sbn = (StatusBarNotification)XposedHelpers.getObjectField(entry, "notification");
@@ -119,7 +121,7 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
-                StatusBarNotification sbnParam = (StatusBarNotification)param.args[0];;
+                StatusBarNotification sbnParam = (StatusBarNotification)param.args[0];
                 if (ConcreteNotificationListenerService.SERVICE_NOTIFICATION.equals(sbnParam.getTag())){
                     extractArchivedNotificationsExtra(sbnParam);
                 }
@@ -141,6 +143,7 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
         PendingIntent pendingIntent = sbn.getNotification().contentIntent;
         //reflection per il metodo getIntent
         Intent notificationIntent = (Intent)XposedHelpers.callMethod(pendingIntent,"getIntent");
-        archivedNotifications = (Set)notificationIntent.getSerializableExtra(ConcreteNotificationListenerService.ARCHIVED_NOTIFICATIONS_EXTRA);
+        //noinspection unchecked
+        archivedNotifications = (Set<String>)notificationIntent.getSerializableExtra(ConcreteNotificationListenerService.ARCHIVED_NOTIFICATIONS_EXTRA);
     }
 }
