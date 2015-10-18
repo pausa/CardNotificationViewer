@@ -58,12 +58,10 @@ public class MainActivity extends AppCompatActivity {
             setContentView(R.layout.activity_main_test);
         else setContentView(R.layout.activity_main);
 
-        //binding del service
+        //binding the service
         Intent intent = new Intent (this, ConcreteNotificationListenerService.class);
         intent.setAction(ConcreteNotificationListenerService.CUSTOM_BINDING);
-        Log.d(TAG, "Avvio il binding");
         bindService(intent, nConnection, Context.BIND_AUTO_CREATE);
-        Log.d(TAG, "registro il receiver");
         nReceiver = new NotificationReceiver();
         IntentFilter filter = new IntentFilter();
         filter.addAction(ConcreteNotificationListenerService.ADD_NOTIFICATION_ACTION);
@@ -120,10 +118,8 @@ public class MainActivity extends AppCompatActivity {
     private ServiceConnection nConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service){
             ConcreteNotificationListenerService.LocalBinder binder = (ConcreteNotificationListenerService.LocalBinder) service;
-            Log.d(TAG,"connesso a servizio");
             nService = binder.getService();
             nBound = true;
-            Log.d(TAG, "aggiornamento su fragment");
             nFragment.initNotificationList(nService);
         }
         public void onServiceDisconnected(ComponentName className) {
@@ -144,12 +140,10 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.d (TAG, "Ricevuto messaggio!");
             Parcelable pExtra;
             pExtra = intent.getParcelableExtra(ConcreteNotificationListenerService.NOTIFICATION_EXTRA);
             if (pExtra != null && pExtra instanceof StatusBarNotification){
-                Log.d (TAG, "Ricevuta notifica!");
-                //controllo l'azione
+                //checking action
                 switch (intent.getAction()) {
                     case ConcreteNotificationListenerService.REMOVE_NOTIFICATION_ACTION:
                         removeNotification((StatusBarNotification) pExtra);
@@ -160,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             else {
-                Log.d (TAG, "messaggio non valido");
+                Log.d (TAG, "received invalid message");
             }
         }
     }

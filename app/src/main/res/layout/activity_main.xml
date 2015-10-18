@@ -1,18 +1,24 @@
-<LinearLayout
+<android.support.design.widget.CoordinatorLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <fragment xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools" android:id="@+id/fragment"
         android:name="com.android.madpausa.cardnotificationviewer.MainActivityFragment"
         tools:layout="@layout/fragment_main" android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/clear_notifications"
-            android:layout_gravity="right"
-            android:onClick="clearAllNotifications"/>
-</LinearLayout>
+        android:layout_height="match_parent"
+        />
+    <android.support.design.widget.FloatingActionButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/clear_notifications"
+        android:clickable="true"
+        android:layout_gravity="right"
+        android:onClick="clearAllNotifications"
+        app:layout_anchor="@id/fragment"
+        app:layout_anchorGravity="bottom|right"
+        app:fabSize="normal"
+        android:src="@drawable/ic_clear_all_white_24dp"
+        android:layout_margin="@dimen/activity_horizontal_margin"/>
+</android.support.design.widget.CoordinatorLayout>

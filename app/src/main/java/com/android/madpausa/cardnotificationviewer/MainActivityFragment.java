@@ -13,7 +13,7 @@ import android.view.ViewGroup;
  * A placeholder fragment containing a simple view.
  */
 public class MainActivityFragment extends Fragment {
-    //adapter per le notifiche
+    //notification list adapter
     NotificationListAdapter notificationAdapter;
 
     RecyclerView nRecyclerView;
@@ -27,8 +27,8 @@ public class MainActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-        //caricare l'adapter
+        //TODO implement extra to filter this view
+        //creating the adapter
         notificationAdapter = new NotificationListAdapter(inflater.getContext());
 
         nRecyclerView = (RecyclerView) inflater.inflate (R.layout.fragment_main,container,false);
@@ -40,7 +40,8 @@ public class MainActivityFragment extends Fragment {
         nRecyclerView.setAdapter(notificationAdapter);
 
         super.onCreateView(inflater, container, savedInstanceState);
-        //inizializzare il loader
+
+        //loading the loader
         return nRecyclerView;
     }
 

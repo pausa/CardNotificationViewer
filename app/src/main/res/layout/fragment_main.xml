@@ -1,20 +1,7 @@
-<!-- TODO animare correttamente la vista -->
+<!-- TODO animate list elements -->
     <android.support.v7.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         android:id="@android:id/list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".MainActivityFragment"/>
-    <!--TextView
-        android:id="@android:id/empty"
-        android:text="@string/empty_list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" /-->
-
-<!--
-android:paddingTop="@dimen/activity_horizontal_margin"
-        android:dividerHeight="@dimen/activity_horizontal_margin"
-        android:paddingLeft="@dimen/activity_vertical_margin"
-        android:paddingRight="@dimen/activity_vertical_margin"
-        android:divider="@color/transparent"
- -->

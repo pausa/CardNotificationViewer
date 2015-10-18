@@ -42,8 +42,11 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     LinkedHashMap<String,StatusBarNotification> notificationMap;
     LinkedHashMap<String,StatusBarNotification> archivedNotificationMap;
 
-    Set<String> notificationsToArchive;
-    
+    public NotificationGroup getNotificationGroups() {
+        return notificationGroups;
+    }
+
+    NotificationGroup notificationGroups;
 
 
     /**
@@ -65,36 +68,34 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "Creo il servizio");
         notificationMap = new LinkedHashMap<String,StatusBarNotification>();
         archivedNotificationMap = new LinkedHashMap<String, StatusBarNotification>();
-        notificationsToArchive = new HashSet<String>();
+        notificationGroups = new NotificationGroup();
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        Log.d(TAG, "arrivata notifica " + getNotificationKey(sbn));
         super.onNotificationPosted(sbn);
         if (!SERVICE_NOTIFICATION.equals(sbn.getTag()))
             handlePostedNotification(sbn);
     }
 
     public void handlePostedNotification (StatusBarNotification sbn) {
-       //la notifica va gestita solo se non da archiviare
-        if (!notificationsToArchive.remove(getNotificationKey(sbn))){
-            //la notifica deve risalire in cima alla pila
-            removeServiceNotification(sbn);
-            notificationMap.put(getNotificationKey(sbn), sbn);
+        //should be removed if already existing, in order to put it back in the non archived notifications
+        removeServiceNotification(sbn);
+        notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
 
-            //in base al parametro configurato, gestisco l'extra
-            if (notificationMap.size() > Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1")))
-                archiveNotifications();
+        //adding it to the group structure
+        notificationGroups.addGroupMember(sbn);
 
-            //Creo l'intent per il messaggio da mandare a chi lo vuole
-            Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
-            intent.putExtra(NOTIFICATION_EXTRA, sbn);
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        }
+        //if the notification are more than the threshold, archive older ones
+        if (notificationMap.size() > Integer.parseInt(sp.getString(SettingsActivityFragment.NOTIFICATION_THRESHOLD, "-1")))
+            archiveNotifications();
+
+        //sending notification to binded clients
+        Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
+        intent.putExtra(NOTIFICATION_EXTRA, sbn);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
     private void archiveNotifications() {
@@ -104,38 +105,47 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
         Iterator<StatusBarNotification> iterator = notificationMap.values().iterator();
         while (iterator.hasNext()){
-            //ottengo la notifica più vecchia sulla mappa
+            //getting the older notification
             StatusBarNotification sbn = iterator.next();
-            String nKey = getNotificationKey(sbn);
+            String nKey = NotificationFilter.getNotificationKey(sbn);
 
-            Log.d(TAG, "archivio notifica: " + nKey);
-
-            //la rimuovo dalla mappa principale e la aggiungo a quella delle archiviate
+            //moving the notification in the archived ones
             notificationMap.remove(nKey);
             archivedNotificationMap.put(nKey, sbn);
 
+            //hiding the notification
             hideNotification(sbn);
-        //se il numero di notifiche è inferiore al threshold, ho finito
+
+            //if I went back to threshold number, then I can stop
             if (notificationMap.size() <= threshold)
                 break;
         }
+
+        //displaying the notification about remining ones
         sendServiceNotification();
     }
 
-    public Map<String, StatusBarNotification> getNotificationMap(){
+    //returning a map containing all the notifications, because it's linked, the order is preserved
+    public LinkedHashMap<String, StatusBarNotification> getNotificationMap(){
         LinkedHashMap<String, StatusBarNotification> map = new LinkedHashMap(archivedNotificationMap);
         map.putAll(notificationMap);
         return map;
     }
 
+    /**
+     * removes all clearable notifications from the service
+     */
     public void clearNotificationList(){
-        //rimuovo le notifiche dalla lista solo se clearable
-        Collection <StatusBarNotification> nCollection = new LinkedList<StatusBarNotification> (archivedNotificationMap.values());
+
+        LinkedList<StatusBarNotification> nCollection = new LinkedList<StatusBarNotification> (archivedNotificationMap.values());
         nCollection.addAll(notificationMap.values());
+
         for (StatusBarNotification sbn : nCollection){
             if (sbn.isClearable()){
-                //rimuovo la notifica anche direttamente, il sistema non manda la callback in caso di notifiche già rimosse
+                //remove notificaion from this service
                 removeServiceNotification(sbn);
+
+                //tells the system to cancel the notification
                 cancelNotification(sbn);
             }
 
@@ -145,16 +155,16 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        Log.d(TAG, "rimossa notifica " + getNotificationKey(sbn));
         super.onNotificationRemoved(sbn);
         if(!SERVICE_NOTIFICATION.equals(sbn.getTag()))
             handleRemovedNotification(sbn);
     }
 
     private void handleRemovedNotification(StatusBarNotification sbn) {
+        //Remove notification from service
         removeServiceNotification(sbn);
 
-        //Creo l'intent per il messaggio da mandare a chi lo vuole
+        //sending information about the removed notification
         Intent intent = new Intent(REMOVE_NOTIFICATION_ACTION);
         intent.putExtra(NOTIFICATION_EXTRA, sbn);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
@@ -163,7 +173,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     @Override
     public void onListenerConnected() {
         super.onListenerConnected();
-        Log.d(TAG, "listener connesso!");
+        Log.d(TAG, "listener connected");
+
+        //bootstrapping the notification map
         StatusBarNotification[] nArray = this.getActiveNotifications();
         if (nArray != null){
             for (StatusBarNotification sbn : nArray)
@@ -173,88 +185,109 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     }
 
-    /**
-     * Gets a key to use in notification map. Made to be compatible with older android versions
-     * @param sbn a notification tu use in order to generate the key
-     * @return a notification key
-     */
-    public static String getNotificationKey(StatusBarNotification sbn) {
-        //va fatto in base alla versione
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
-            return sbn.getKey();
-        else
-            return sbn.getPackageName() + sbn.getTag() + sbn.getId();
-    }
+
 
     @Override
     public IBinder onBind(Intent intent) {
         sp = PreferenceManager.getDefaultSharedPreferences(this);
+
+        //bind for non system clients, needed to prevent odd behaviour from android notification service
         if (intent.getAction().equals(CUSTOM_BINDING)){
-            Log.d(TAG, "custom binding");
             return mBinder;
         }
         else{
-            Log.d(TAG,"system binding");
             return super.onBind(intent);
         }
 
     }
 
+    /**
+     * helper class, cancels given notification from system. Should be compatible with all android versions
+     * @param sbn
+     */
     public void cancelNotification (StatusBarNotification sbn){
-        //per mantenere la retrocompatibilità
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH)
             super.cancelNotification(sbn.getKey());
         else
             super.cancelNotification(sbn.getPackageName(),sbn.getTag(),sbn.getId());
     }
-    
+
+    /**
+     * removes notification from this service only
+     * @param sbn
+     */
     public void removeServiceNotification(StatusBarNotification sbn){
-        String nKey = getNotificationKey(sbn);
+        String nKey = NotificationFilter.getNotificationKey(sbn);
+
+        //removes from main notifications
         notificationMap.remove(nKey);
 
-        //se la notifica non è presente nel set da archiviare, allora va rimossa anche dalle archiviate
+        //removes from archived notifications
         archivedNotificationMap.remove(nKey);
 
-        //rimuovo la notifica, nel caso le archiviate finiscano
+        //if archived notifications are over, I should remove service notification, otherwise update it
         if (archivedNotificationMap.size() < 1)
             removeServiceNotification();
         else sendServiceNotification();
+
+        //it should be removed from group structure too
+        notificationGroups.removeGroupMember(sbn);
     }
 
+    /**
+     * sends the service notification
+     */
     private void sendServiceNotification (){
         NotificationCompat.Builder nBuilder = new NotificationCompat.Builder(this);
 
-        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), archivedNotificationMap.size() + notificationMap.size()));
+        //creating a default filter, meaning it will filter out all non summary notifications
+        NotificationFilter nFilter = new NotificationFilter();
+        nBuilder.setContentTitle(String.format(getString(R.string.service_notification_text), nFilter.applyFilter(archivedNotificationMap.values(),notificationGroups,true).size()));
+
         nBuilder.setSmallIcon(R.drawable.ic_notification);
+        //gets the correct color resource, based on android version
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            nBuilder.setColor(getResources().getColor(R.color.app_background,null));
+        else nBuilder.setColor(getResources().getColor(R.color.app_background));
+
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
-        //aggiungo l'intent per aprire l'app
+        //setting the intent
         Intent resultIntent = new Intent (this, MainActivity.class);
+
+        //setting the extra containing the archived notifications
         resultIntent.putExtra(ARCHIVED_NOTIFICATIONS_EXTRA,new HashSet<>(archivedNotificationMap.keySet()));
 
         TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(MainActivity.class);
         stackBuilder.addNextIntent(resultIntent);
+
         PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
         nBuilder.setContentIntent(resultPendingIntent);
-        nBuilder.setPriority(Notification.PRIORITY_MIN);
+
+        //low priority, not min, as it has to show in the lockscreen
+        nBuilder.setPriority(Notification.PRIORITY_LOW);
+
         Notification notification = nBuilder.build();
+
+        //this notification should be sticky
         notification.flags |= Notification.FLAG_NO_CLEAR;
         nManager.notify(SERVICE_NOTIFICATION, 0, notification);
     }
 
     private void removeServiceNotification(){
-        Log.d(TAG, "Rimuovo notifica del service");
         NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
         nManager.cancel(SERVICE_NOTIFICATION,0);
     }
 
     /**
-     * for now it will lower the priority of the notification
+     * Should hide the given notification from the statusBar. Unimplemented for now. Xposed is handling it at the moment
      * @param sbn the notification to lower
      */
+    @Deprecated
     public void hideNotification (StatusBarNotification sbn){
-        //TODO trovare un modo legale
+        //TODO find a legit way, even using root
     }
 
 

@@ -30,16 +30,24 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     List <StatusBarNotification> nList = null;
     ConcreteNotificationListenerService nService;
 
+    //the notification filter for this adapter
+    NotificationFilter nFilter;
+
     Context context;
     public NotificationListAdapter(Context c) {
         super();
         context = c;
         nList = new ArrayList<StatusBarNotification>();
-
+        nFilter = new NotificationFilter();
     }
+
     public void setNotificationService(ConcreteNotificationListenerService nService) {
         this.nService = nService;
         changeDataSet();
+    }
+
+    public void setNotificationFilter (NotificationFilter filter){
+        nFilter = filter;
     }
 
     public void addNotification (StatusBarNotification sbn){
@@ -64,23 +72,21 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        // TODO usare il tema per impostare il colore o trovare un modo per fare l'inversione dinamica
-        // TODO testare con kitkat o usando un tema scuro
+        // TODO find a way to dinamically change card color, without knowing the package
+        // TODO testing using a dark theme
 
         StatusBarNotification sbn = nList.get(position);
         RemoteViews nRemote = sbn.getNotification().bigContentView;
         if (nRemote == null)
             nRemote = sbn.getNotification().contentView;
 
-        Log.d(TAG, "id notifica: " + ConcreteNotificationListenerService.getNotificationKey(sbn));
-
-        //rimuovo eventuali viste già caricate
+        //removing loeaded views
         holder.getCardView().removeAllViews();
-        //imposto lo sfondo invertito, se necessario
+
+        //setting dark background, when needed
         if (isInvertedBackground(sbn))
             holder.getCardView().setBackgroundColor(getColor(R.color.cardview_dark_background));
         else holder.getCardView().setBackgroundColor(getColor(R.color.cardview_light_background));
-        //holder.getCardView().setBackgroundColor(getColor(sbn.getNotification().color));
 
         holder.setSbn(sbn);
         holder.getCardView().addView(nRemote.apply(context, holder.getCardView()));
@@ -104,31 +110,27 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     }
 
     public void changeDataSet() {
-        //va aggiornata prima la lista, altrimenti potrebbero essere resituiti risultati non aggiornati
-        //la lista viene aggiornata in modo che le notifiche più recenti siano in cima
-        //TODO gestire bene i gruppi e i summary per ora aggiungo alla lista solo se il summary è l'unica notifica per il gruppo
+        //updating list first, like a stack
+        //TODO handle groups using dedicated view
         nList = new ArrayList<StatusBarNotification>();
 
         if (nService != null){
             Collection<StatusBarNotification> notifications = nService.getNotificationMap().values();
-            NotificationGroup nGroup = new NotificationGroup(notifications);
+            NotificationGroup nGroup = nService.getNotificationGroups();
+
             for (StatusBarNotification sbn : notifications){
-                if (nGroup.getGroupSummary(sbn.getGroupKey()) != null
-                        && nGroup.getGroupSummary(sbn.getGroupKey()).equals(ConcreteNotificationListenerService.getNotificationKey(sbn))
-                        && nGroup.groupSize(sbn.getGroupKey()) > 1)
-                    continue;
-                else
+                //if matches filter, adding it to the list
+                if (nFilter.matchFilter(sbn,nGroup,true))
                     nList.add(0, sbn);
             }
         }
-
         super.notifyDataSetChanged();
 
     }
 
     private boolean isInvertedBackground(StatusBarNotification sbn){
-        //TODO rimuovere il cablatone
-        //TODO gestire sfondo scuro per alcune notifiche
+        //TODO remove fixed string
+        //TODO find a way to handle proper background
 
         if (sbn.getPackageName().equals("com.google.android.music"))
             return true;
@@ -164,29 +166,25 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         public void performOnClick(){
             //TODO aprire un dialog con le notifiche grouppate
             PendingIntent pendingIntent = sbn.getNotification().contentIntent;
-            Log.d(TAG, "intent della notifica: " + pendingIntent);
             if (pendingIntent != null) {
                 try {
                     pendingIntent.send();
                 } catch (PendingIntent.CanceledException e) {
-                    Log.e(TAG, "impossibile mandare l'intent");
+                    Log.e(TAG, "error sending the intent");
                 }
             }
             //rimuovo la notifica dal service, altrimenti non verrebbe rimossa sul click
             //TODO implementare questa logica con lo swype e animazione
             if (nService != null) {
-                Log.d (TAG, "Notifiche nel service: " + nService.getNotificationMap().size());
                 nService.cancelNotification(sbn);
                 changeDataSet();
             }
-            else Log.d(TAG, "Service null");
         }
 
         private class NotificationOnClickListener implements View.OnClickListener{
 
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "ricevuto click!");
                 performOnClick();
             }
         }

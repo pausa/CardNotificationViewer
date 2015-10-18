@@ -1,4 +1,4 @@
-<!-- TODO sostituire con toolbar -->
+<!-- TODO use toolbar -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.android.madpausa.cardnotificationviewer.SettingsActivity">
