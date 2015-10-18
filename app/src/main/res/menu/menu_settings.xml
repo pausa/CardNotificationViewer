@@ -1,5 +1,5 @@
 <!-- TODO use toolbar -->
-<menu 
+<menu
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.android.madpausa.cardnotificationviewer.SettingsActivity">
 </menu>
