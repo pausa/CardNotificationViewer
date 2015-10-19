@@ -22,9 +22,10 @@ public class NotificationFilter implements Parcelable {
     String tagFilter;
     String keyFilter;
     String pkgFilter;
+    int minPriority;
 
     /**
-     * constructor for the default filter. Meaning tha will hide children notifications and will show summaries
+     * constructor for the default filter. Meaning tha will hide children notifications.
      */
     public NotificationFilter (){
         showChildern = false;
@@ -33,18 +34,21 @@ public class NotificationFilter implements Parcelable {
         tagFilter = null;
         keyFilter = null;
         pkgFilter = null;
+        minPriority = Notification.PRIORITY_MIN;
     }
 
     protected NotificationFilter(Parcel in) {
         this();
         boolean[] booleanFilters = in.createBooleanArray();
         String[] stringFilters = in.createStringArray();
+        int[] intFilters = in.createIntArray();
         showChildern = booleanFilters[0];
         showSummary = booleanFilters[1];
         groupFilter = stringFilters[0];
         tagFilter = stringFilters[1];
         keyFilter = stringFilters[2];
         pkgFilter = stringFilters[3];
+        minPriority=intFilters[0];
     }
 
     public static final Creator<NotificationFilter> CREATOR = new Creator<NotificationFilter>() {
@@ -68,8 +72,10 @@ public class NotificationFilter implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         boolean[] booleanFilters = new boolean[] {showChildern, showSummary};
         String[] stringFilters = new String[] {groupFilter, tagFilter, keyFilter, pkgFilter};
+        int[] intFilters = new int[] {minPriority};
         dest.writeBooleanArray(booleanFilters);
         dest.writeStringArray(stringFilters);
+        dest.writeIntArray(intFilters);
     }
 
     /**
@@ -97,6 +103,10 @@ public class NotificationFilter implements Parcelable {
      * @return true if notification matches the filter
      */
     public boolean matchFilter (StatusBarNotification sbn, NotificationGroups notificationGroups, boolean exact){
+        //Checking notificaiton priority
+        if (sbn.getNotification().priority < minPriority)
+            return false;
+
         //these mean something, only if a NotificationGroups is passed
         if (notificationGroups != null) {
             if (!showSummary && isSummary(sbn))
@@ -201,6 +211,12 @@ public class NotificationFilter implements Parcelable {
     @SuppressWarnings("unused")
     public NotificationFilter setPkgFilter(String pkgFilter) {
         this.pkgFilter = pkgFilter;
+        return this;
+    }
+
+    @SuppressWarnings("unused")
+    public NotificationFilter setMinPriority (int priority) {
+        this.minPriority = priority;
         return this;
     }
 }

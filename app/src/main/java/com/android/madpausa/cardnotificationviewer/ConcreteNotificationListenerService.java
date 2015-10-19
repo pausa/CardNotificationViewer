@@ -82,6 +82,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         //should be removed if already existing, in order to put it back in top position
         removeServiceNotification(sbn);
 
+        //min priority notifications should be archived too
+        notificationFilter.setMinPriority(Notification.PRIORITY_LOW);
+
         //if the notification has to be shown, is putted in the primary map
         if (notificationFilter.matchFilter(sbn,notificationGroups,true))
             notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
@@ -242,6 +245,8 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      * sends the service notification
      */
     private void sendServiceNotification (){
+        //should see notification despite the priority
+        notificationFilter.setMinPriority(Notification.PRIORITY_MIN);
 
         //filtering archived notification list
         List<StatusBarNotification> filteredArchivedNotificationList = notificationFilter.applyFilter(archivedNotificationMap.values(), notificationGroups, true);
