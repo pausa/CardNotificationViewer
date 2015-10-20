@@ -36,6 +36,7 @@ public class MainActivityFragment extends Fragment {
         nRecyclerView.setLayoutManager(nLayoutManager);
 
         nRecyclerView.setAdapter(notificationAdapter);
+        nRecyclerView.setItemAnimator(notificationAdapter.animator);
 
         super.onCreateView(inflater, container, savedInstanceState);
 

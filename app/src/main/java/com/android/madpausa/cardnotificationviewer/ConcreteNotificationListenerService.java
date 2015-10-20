@@ -43,7 +43,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     NotificationGroups notificationGroups;
-    NotificationFilter notificationFilter;
+    NotificationFilter baseNotificationFilter;
 
 
     /**
@@ -68,7 +68,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         notificationMap = new LinkedHashMap<>();
         archivedNotificationMap = new LinkedHashMap<>();
         notificationGroups = new NotificationGroups();
-        notificationFilter = new NotificationFilter();
+        baseNotificationFilter = new NotificationFilter();
     }
 
     @Override
@@ -81,16 +81,20 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public void handlePostedNotification (StatusBarNotification sbn) {
         //should be removed if already existing, in order to put it back in top position
         removeServiceNotification(sbn);
-
+        NotificationFilter notificationFilter = (NotificationFilter)baseNotificationFilter.clone();
         //min priority notifications should be archived too
         notificationFilter.setMinPriority(Notification.PRIORITY_LOW);
+
+        Log.d(TAG,"priority: " + sbn.getNotification().priority);
 
         //if the notification has to be shown, is putted in the primary map
         if (notificationFilter.matchFilter(sbn,notificationGroups,true))
             notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
-        else
-        //otherwise, it goes directly in the archived ones
-            archivedNotificationMap.put(NotificationFilter.getNotificationKey(sbn),sbn);
+        else {
+            //otherwise, it goes directly in the archived ones
+            archivedNotificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
+            sendServiceNotification();
+        }
 
         //adding it to the group structure
         notificationGroups.addGroupMember(sbn);
@@ -245,11 +249,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
      * sends the service notification
      */
     private void sendServiceNotification (){
-        //should see notification despite the priority
-        notificationFilter.setMinPriority(Notification.PRIORITY_MIN);
 
         //filtering archived notification list
-        List<StatusBarNotification> filteredArchivedNotificationList = notificationFilter.applyFilter(archivedNotificationMap.values(), notificationGroups, true);
+        List<StatusBarNotification> filteredArchivedNotificationList = baseNotificationFilter.applyFilter(archivedNotificationMap.values(), notificationGroups, true);
         int filteredArchiveddSize = filteredArchivedNotificationList.size();
 
         //should show notification only if there are notifications to be shown

@@ -15,7 +15,7 @@ import java.util.List;
  *
  * this class represents a filter to apply to notifications, in order to show only specific ones
  */
-public class NotificationFilter implements Parcelable {
+public class NotificationFilter implements Parcelable, Cloneable {
     boolean showChildern;
     boolean showSummary;
     String groupFilter;
@@ -35,6 +35,24 @@ public class NotificationFilter implements Parcelable {
         keyFilter = null;
         pkgFilter = null;
         minPriority = Notification.PRIORITY_MIN;
+    }
+
+    @Override
+    final public Object clone() {
+        NotificationFilter nf;
+        try {
+            nf = (NotificationFilter)super.clone();
+        } catch (CloneNotSupportedException e) {
+            nf = new NotificationFilter();
+        }
+        return nf.setGroupFilter(groupFilter)
+                    .setKeyFilter(keyFilter)
+                    .setShowChildern(showChildern)
+                    .setShowSummary(showSummary)
+                    .setTagFilter(tagFilter)
+                    .setPkgFilter(pkgFilter)
+                    .setMinPriority(minPriority);
+
     }
 
     protected NotificationFilter(Parcel in) {

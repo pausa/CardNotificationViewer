@@ -12,6 +12,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 
@@ -36,6 +38,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
     //the notification filter for this adapter
     NotificationFilter nFilter;
+    Animator animator;
 
     Context context;
     public NotificationListAdapter(Context c) {
@@ -43,6 +46,8 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         context = c;
         nList = new ArrayList<>();
         nFilter = new NotificationFilter();
+        animator = new Animator();
+
     }
 
     public void setNotificationService(ConcreteNotificationListenerService nService) {
@@ -73,7 +78,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(context);
         View view = inflater.inflate(R.layout.notification_list_element, parent, false);
-        return new ViewHolder(view);
+        return new ViewHolder(view, parent);
     }
 
     @Override
@@ -92,15 +97,14 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         //setting notification to holder
         holder.setSbn(sbn);
         //adding new view
-        holder.setNotificationView(nRemote.apply(context, holder.getCardView()));
+        View notificationView = nRemote.apply(context, holder.parent);
+
+        holder.setNotificationView(notificationView);
 
         //setting dark background, when needed
         if (isDarkBackground(holder))
             holder.getCardView().setBackgroundColor(getColor(R.color.cardview_dark_background));
         else holder.getCardView().setBackgroundColor(getColor(R.color.cardview_light_background));
-
-
-
 
     }
 
@@ -125,6 +129,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             }
         }
         super.notifyDataSetChanged();
+
 
     }
 
@@ -175,12 +180,14 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         StatusBarNotification sbn;
+        ViewGroup parent;
         View root;
         View notificationView;
 
-        public ViewHolder ( View r){
+        public ViewHolder ( View r, ViewGroup p){
             super(r);
             root = r;
+            parent = p;
             root.setOnClickListener(new NotificationOnClickListener());
         }
         public CardView getCardView (){
@@ -226,5 +233,64 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             }
         }
 
+        @Override
+        public boolean equals (Object o){
+            if (o instanceof ViewHolder){
+                ViewHolder v = (ViewHolder) o;
+                if (v.getSbn() != null)
+                    return NotificationFilter.getNotificationKey(v.getSbn()).equals(NotificationFilter.getNotificationKey(sbn));
+            }
+            return false;
+        }
+
+    }
+
+    public class Animator extends RecyclerView.ItemAnimator {
+
+        @Override
+        public void runPendingAnimations() {
+            //nothing to be done for now, as all animations return always false
+        }
+
+        @Override
+        public boolean animateRemove(RecyclerView.ViewHolder holder) {
+            if (holder instanceof ViewHolder){
+                ViewHolder vHolder = (ViewHolder) holder;
+                Animation anim = AnimationUtils.loadAnimation(context,android.R.anim.slide_out_right);
+
+                vHolder.getCardView().startAnimation(anim);
+            }
+            return false;
+        }
+
+        @Override
+        public boolean animateAdd(RecyclerView.ViewHolder holder) {
+            return false;
+        }
+
+        @Override
+        public boolean animateMove(RecyclerView.ViewHolder holder, int fromX, int fromY, int toX, int toY) {
+            return false;
+        }
+
+        @Override
+        public boolean animateChange(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder, int fromLeft, int fromTop, int toLeft, int toTop) {
+            return false;
+        }
+
+        @Override
+        public void endAnimation(RecyclerView.ViewHolder item) {
+
+        }
+
+        @Override
+        public void endAnimations() {
+
+        }
+
+        @Override
+        public boolean isRunning() {
+            return false;
+        }
     }
 }

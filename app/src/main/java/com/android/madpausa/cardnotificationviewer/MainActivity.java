@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
         nBuilder.setContentTitle("Test Notification!");
         nBuilder.setContentText("This is just a test");
         nBuilder.setSmallIcon(R.drawable.ic_notification);
+        nBuilder.setPriority(Notification.PRIORITY_MIN);
 
         Notification notification = nBuilder.build();
 

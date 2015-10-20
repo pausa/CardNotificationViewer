@@ -23,6 +23,7 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
     static final String classNotificationData = packageName + ".statusbar.NotificationData";
     static final String classBaseStatusBar = packageName + ".statusbar.BaseStatusBar";
     Set<String> archivedNotifications;
+
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
         if(!loadPackageParam.packageName.equals(packageName))
@@ -32,7 +33,6 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
         hookShouldFilterOutMethod(loadPackageParam);
         hookRemoveMethod(loadPackageParam);
         hookUpdateNotificationMethod(loadPackageParam);
-
     }
 
     private void hookShouldFilterOutMethod(XC_LoadPackage.LoadPackageParam loadPackageParam) {
@@ -41,10 +41,10 @@ public class NotificationDataXposed implements IXposedHookLoadPackage {
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
                 StatusBarNotification sbnParam = (StatusBarNotification)param.args[0];
-                if (archivedNotifications != null && archivedNotifications.contains(NotificationFilter.getNotificationKey(sbnParam))) {
-                    param.setResult(true);
-                    //noinspection UnnecessaryReturnStatement Xposed javadoc says I should return
-                    return;
+                if (archivedNotifications != null && archivedNotifications.contains(NotificationFilter.getNotificationKey(sbnParam))){
+                        param.setResult(true);
+                        //noinspection UnnecessaryReturnStatement Xposed javadoc says I should return
+                        return;
                 }
             }
         };
