@@ -129,7 +129,8 @@ public class MainActivity extends AppCompatActivity {
     public void clearAllNotifications(View view) {
         if (nBound)
             nService.clearNotificationList();
-        nFragment.clearNotificationList();
+        //this shouldn't be needed anymore
+        //nFragment.clearNotificationList();
     }
 
     private class NotificationReceiver extends BroadcastReceiver {

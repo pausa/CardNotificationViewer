@@ -36,8 +36,6 @@ public class MainActivityFragment extends Fragment {
         nRecyclerView.setLayoutManager(nLayoutManager);
 
         nRecyclerView.setAdapter(notificationAdapter);
-        nRecyclerView.setItemAnimator(notificationAdapter.animator);
-
         super.onCreateView(inflater, container, savedInstanceState);
 
         //loading the loader
@@ -56,6 +54,8 @@ public class MainActivityFragment extends Fragment {
 
     public void addNotification (StatusBarNotification sbn){
         notificationAdapter.addNotification(sbn);
+        //going back to top, after inserting
+        nRecyclerView.scrollToPosition(0);
     }
     public void clearNotificationList (){
         notificationAdapter.clearList();

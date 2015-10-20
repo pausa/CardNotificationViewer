@@ -12,15 +12,15 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.RemoteViews;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by ANTPETRE on 02/10/2015.
@@ -33,21 +33,20 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     private static final String[] forceDarkBackgroung = new String[]{"PACKAGE_NAME"};
     private static final String[] forceLightBackgroung = new String[]{"PACKAGE_NAME"};
 
-    List <StatusBarNotification> nList = null;
+    List <StatusBarNotification> nList;
+    Set<String> nSet;
     ConcreteNotificationListenerService nService;
 
     //the notification filter for this adapter
     NotificationFilter nFilter;
-    Animator animator;
 
     Context context;
     public NotificationListAdapter(Context c) {
         super();
         context = c;
         nList = new ArrayList<>();
+        nSet = new HashSet<>();
         nFilter = new NotificationFilter();
-        animator = new Animator();
-
     }
 
     public void setNotificationService(ConcreteNotificationListenerService nService) {
@@ -60,18 +59,45 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         nFilter = filter;
     }
 
-    @SuppressWarnings("UnusedParameters")
+    /**
+     * adds the notification to the list, handles updates too
+     * @param sbn the notification to be added
+     */
     public void addNotification (StatusBarNotification sbn){
-        changeDataSet();
+        //adding the notification to the top of the list
+        nList.add(0,sbn);
+        //if it is added to the set, notify the adapter
+        if (nSet.add(NotificationFilter.getNotificationKey(sbn))){
+            notifyItemInserted(0);
+        }
+        else { //if not, should find where the old one was, remove it and update the adapter
+            int pos = findNotificationPosition(sbn);
+            nList.remove(pos);
+
+            //Since it has been added to top, if old position was different, notify the move before the change
+            if ((pos - 1) != 0){
+                notifyItemMoved(pos-1, 0);
+            }
+            notifyItemChanged(0);
+        }
+
     }
 
-    @SuppressWarnings("UnusedParameters")
+    /**
+     * removes notification from the list
+     * @param sbn the notificatio nto be removed
+     */
     public void removeNotification(StatusBarNotification sbn){
-        changeDataSet();
+        //removing from the set, if not present, nothing to do
+        if(nSet.remove(NotificationFilter.getNotificationKey(sbn))){
+            int pos = findNotificationPosition(sbn);
+            nList.remove(pos);
+            notifyItemRemoved(pos);
+        }
     }
 
     public void clearList (){
-        changeDataSet();
+
     }
 
     @Override
@@ -83,8 +109,6 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        // TODO find a way to dinamically change card color, without knowing the package
-        // TODO testing using a dark theme
 
         StatusBarNotification sbn = nList.get(position);
         RemoteViews nRemote = sbn.getNotification().bigContentView;
@@ -113,23 +137,28 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         return nList.size();
     }
 
+    /**
+     * this will update the whole list, meant for reload it, should not be used on punctual updates
+     */
     public void changeDataSet() {
         //updating list first, like a stack
         //TODO handle groups using dedicated view
+
         nList = new ArrayList<>();
+        nSet = new HashSet<>();
 
         if (nService != null){
             Collection<StatusBarNotification> notifications = nService.getNotificationMap().values();
             NotificationGroups nGroup = nService.getNotificationGroups();
-
             for (StatusBarNotification sbn : notifications){
-                //if matches filter, adding it to the list
-                if (nFilter.matchFilter(sbn,nGroup,true))
+                //if matches filter, adding it to the list and to the set
+                if (nFilter.matchFilter(sbn,nGroup,true)) {
                     nList.add(0, sbn);
+                    nSet.add(NotificationFilter.getNotificationKey(sbn));
+                }
             }
         }
-        super.notifyDataSetChanged();
-
+        notifyDataSetChanged();
 
     }
 
@@ -147,7 +176,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
         if (nViewResources != null){
             //trying to understand background color from title text
-            int titleViewId = nViewResources.getIdentifier("android:id/title",null,null);
+            int titleViewId = nViewResources.getIdentifier("android:id/title", null, null);
             if (titleViewId != 0){
                 TextView titleView = (TextView)holder.getNotificationView().findViewById(titleViewId);
                 textColor=titleView.getTextColors().getDefaultColor();
@@ -177,6 +206,22 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             return context.getResources().getColor(id,null);
     }
 
+    /**
+     * finds the last notification in the adapter list that matches input
+     * @param sbn the notification to find
+     * @return the position, or -1 if not found
+     */
+    private int findNotificationPosition (StatusBarNotification sbn){
+        String nKey = (NotificationFilter.getNotificationKey(sbn));
+        int listSize = nList.size();
+
+        for (int pos = listSize - 1; pos >= 0; pos--){
+            if (nKey.equals(NotificationFilter.getNotificationKey(nList.get(pos))))
+                return pos;
+        }
+
+        return -1;
+    }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         StatusBarNotification sbn;
@@ -221,7 +266,6 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             //TODO use swype and animation to implement this logic
             if (nService != null) {
                 nService.cancelNotification(sbn);
-                changeDataSet();
             }
         }
 
@@ -245,52 +289,4 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
     }
 
-    public class Animator extends RecyclerView.ItemAnimator {
-
-        @Override
-        public void runPendingAnimations() {
-            //nothing to be done for now, as all animations return always false
-        }
-
-        @Override
-        public boolean animateRemove(RecyclerView.ViewHolder holder) {
-            if (holder instanceof ViewHolder){
-                ViewHolder vHolder = (ViewHolder) holder;
-                Animation anim = AnimationUtils.loadAnimation(context,android.R.anim.slide_out_right);
-
-                vHolder.getCardView().startAnimation(anim);
-            }
-            return false;
-        }
-
-        @Override
-        public boolean animateAdd(RecyclerView.ViewHolder holder) {
-            return false;
-        }
-
-        @Override
-        public boolean animateMove(RecyclerView.ViewHolder holder, int fromX, int fromY, int toX, int toY) {
-            return false;
-        }
-
-        @Override
-        public boolean animateChange(RecyclerView.ViewHolder oldHolder, RecyclerView.ViewHolder newHolder, int fromLeft, int fromTop, int toLeft, int toTop) {
-            return false;
-        }
-
-        @Override
-        public void endAnimation(RecyclerView.ViewHolder item) {
-
-        }
-
-        @Override
-        public void endAnimations() {
-
-        }
-
-        @Override
-        public boolean isRunning() {
-            return false;
-        }
-    }
 }

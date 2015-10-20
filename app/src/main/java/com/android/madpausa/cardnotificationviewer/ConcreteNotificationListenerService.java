@@ -85,8 +85,6 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         //min priority notifications should be archived too
         notificationFilter.setMinPriority(Notification.PRIORITY_LOW);
 
-        Log.d(TAG,"priority: " + sbn.getNotification().priority);
-
         //if the notification has to be shown, is putted in the primary map
         if (notificationFilter.matchFilter(sbn,notificationGroups,true))
             notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
