@@ -179,7 +179,8 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             int titleViewId = nViewResources.getIdentifier("android:id/title", null, null);
             if (titleViewId != 0){
                 TextView titleView = (TextView)holder.getNotificationView().findViewById(titleViewId);
-                textColor=titleView.getTextColors().getDefaultColor();
+                if (titleView != null)
+                    textColor=titleView.getTextColors().getDefaultColor();
             }
         }
 
