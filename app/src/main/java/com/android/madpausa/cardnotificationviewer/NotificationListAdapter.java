@@ -4,12 +4,16 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RemoteViews;
@@ -229,13 +233,15 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         ViewGroup parent;
         View root;
         View notificationView;
+        GestureDetectorCompat gDetector;
 
         public ViewHolder ( View r, ViewGroup p){
             super(r);
             root = r;
             parent = p;
-            root.setOnClickListener(new NotificationOnClickListener());
-
+            NotificationTouchListener nTouch = new NotificationTouchListener();
+            gDetector = new GestureDetectorCompat(root.getContext(),nTouch);
+            root.setOnTouchListener(nTouch);
         }
         public CardView getCardView (){
             return (CardView) root.findViewById(R.id.cardListitem);
@@ -271,14 +277,6 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             }*/
         }
 
-        private class NotificationOnClickListener implements View.OnClickListener{
-
-            @Override
-            public void onClick(View v) {
-                performOnClick();
-            }
-        }
-
         @Override
         public boolean equals (Object o){
             if (o instanceof ViewHolder){
@@ -289,6 +287,27 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             return false;
         }
 
+        private class NotificationTouchListener extends GestureDetector.SimpleOnGestureListener implements View.OnTouchListener{
+
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return gDetector.onTouchEvent(event);
+            }
+
+            @Override
+            public boolean onDown(MotionEvent e) {
+                root.setPressed(true);
+                return true;
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                root.setPressed(false);
+                performOnClick();
+                return true;
+            }
+        }
     }
 
 }
