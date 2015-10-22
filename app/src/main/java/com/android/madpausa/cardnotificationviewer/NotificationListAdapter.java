@@ -235,6 +235,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             root = r;
             parent = p;
             root.setOnClickListener(new NotificationOnClickListener());
+
         }
         public CardView getCardView (){
             return (CardView) root.findViewById(R.id.cardListitem);
@@ -265,9 +266,9 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
             }
 
             //TODO use swype and animation to implement this logic
-            if (nService != null) {
+            /*if (nService != null) {
                 nService.cancelNotification(sbn);
-            }
+            }*/
         }
 
         private class NotificationOnClickListener implements View.OnClickListener{
