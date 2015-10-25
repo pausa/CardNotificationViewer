@@ -83,7 +83,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         removeServiceNotification(sbn);
         NotificationFilter notificationFilter = (NotificationFilter)baseNotificationFilter.clone();
         //min priority notifications should be archived too
-        notificationFilter.setMinPriority(Notification.PRIORITY_LOW);
+        notificationFilter.setMinPriority(Notification.PRIORITY_DEFAULT);
 
         //if the notification has to be shown, is putted in the primary map
         if (notificationFilter.matchFilter(sbn,notificationGroups,true))
