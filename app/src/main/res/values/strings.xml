@@ -1,3 +1,21 @@
+<!--
+ Copyright 2015 Antonio Petrella
+
+ This file is part of Card Notification Viewer
+
+ Card Notification Viewer is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Card Notification Viewer is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Card Notification Viewer.  If not, see <http://www.gnu.org/licenses/>.
+-->
 <resources>
     <string name="app_name">Card Notification Viewer</string>
     <string name="hello_world">Hello world!</string>
@@ -10,7 +28,7 @@
     <string name="clear_notifications">Clear List</string>
     <string name="pref_notification_threshold_title">Notification Threshold</string>
     <string name="pref_notification_threshold_default">3</string>
-    <string name="pref_notification_threshold_summary">"%1$s notifications"</string>
+    <string name="pref_notification_threshold_summary">"%s notifications"</string>
     <string name="pref_test_mode_default">false</string>
     <string name="pref_test_mode_title">Debug Mode</string>
     <string name="title_activity_settings">Settings</string>
