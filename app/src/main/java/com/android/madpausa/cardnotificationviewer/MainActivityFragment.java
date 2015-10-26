@@ -57,10 +57,6 @@ public class MainActivityFragment extends Fragment {
         //going back to top, after inserting
         nRecyclerView.scrollToPosition(0);
     }
-    public void clearNotificationList (){
-        notificationAdapter.clearList();
-    }
-
     public void removeNotification(StatusBarNotification sbn) {
         notificationAdapter.removeNotification(sbn);
     }

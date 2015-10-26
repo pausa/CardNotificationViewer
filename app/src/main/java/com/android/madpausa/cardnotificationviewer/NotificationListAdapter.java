@@ -1,25 +1,16 @@
 package com.android.madpausa.cardnotificationviewer;
 
-import android.animation.ValueAnimator;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
-import android.support.v4.view.GestureDetectorCompat;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
-import android.view.GestureDetector;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RemoteViews;
-import android.widget.Scroller;
 import android.widget.TextView;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,6 +24,7 @@ import java.util.Set;
  * this implements the adapter to show the notification. The Aim is to make it as generic as possible and to provide android-like notification views.
  */
 public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHolder> {
+    @SuppressWarnings("unused")
     private static final String TAG = NotificationListAdapter.class.getSimpleName();
 
     private static final String[] forceDarkBackgroung = new String[]{"PACKAGE_NAME"};
@@ -99,10 +91,6 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
             nList.remove(pos);
             notifyItemRemoved(pos);
         }
-    }
-
-    public void clearList (){
-
     }
 
     @Override

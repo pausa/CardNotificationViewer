@@ -12,11 +12,11 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.TranslateAnimation;
 import android.widget.Scroller;
 
 /**
  * Created by ANTPETRE on 26/10/2015.
+ * This represents the viewHolder in the RecyclerView
  */
 public class CardElementHolder extends RecyclerView.ViewHolder {
     private static final String TAG = CardElementHolder.class.getSimpleName();
@@ -30,7 +30,6 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
 
     GestureDetectorCompat gDetector;
     Scroller scroller;
-    TranslateAnimation trans;
     ValueAnimator animator;
 
     boolean cancel = false;
