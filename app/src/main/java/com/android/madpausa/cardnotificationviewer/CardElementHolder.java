@@ -181,8 +181,7 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
                     case MotionEvent.ACTION_CANCEL:
                         int x = Math.round(v.getTranslationX());
                         parent.requestDisallowInterceptTouchEvent(false);
-                        scroller.startScroll(x, 0, -1 * x, 0);
-                        animator.setDuration(scroller.getDuration());
+                        scroller.startScroll(x, 0, -1 * x, 0, (int)animator.getDuration());
                         animator.start();
                         result = true;
                         isMoving = false;
@@ -203,7 +202,6 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
                     cancel = true;
                     //performing fling
                     scroller.fling((int) root.getTranslationX(), 0, Math.round(velocityX), 0, -1 * Integer.MAX_VALUE, Integer.MAX_VALUE, 0, 0);
-                    animator.setDuration(scroller.getDuration());
                     animator.start();
                 }
             }
