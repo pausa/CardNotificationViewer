@@ -1,10 +1,10 @@
 package com.android.madpausa.cardnotificationviewer;
 
+import android.animation.ValueAnimator;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.view.GestureDetectorCompat;
@@ -17,6 +17,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RemoteViews;
+import android.widget.Scroller;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import java.util.Set;
  *
  * this implements the adapter to show the notification. The Aim is to make it as generic as possible and to provide android-like notification views.
  */
-public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationListAdapter.ViewHolder> {
+public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHolder> {
     private static final String TAG = NotificationListAdapter.class.getSimpleName();
 
     private static final String[] forceDarkBackgroung = new String[]{"PACKAGE_NAME"};
@@ -105,14 +106,14 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
     }
 
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    public CardElementHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(context);
         View view = inflater.inflate(R.layout.notification_list_element, parent, false);
-        return new ViewHolder(view, parent);
+        return new CardElementHolder(view, parent,nService);
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(CardElementHolder holder, int position) {
 
         StatusBarNotification sbn = nList.get(position);
         RemoteViews nRemote = sbn.getNotification().bigContentView;
@@ -166,7 +167,7 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
 
     }
 
-    private boolean isDarkBackground(ViewHolder holder){
+    private boolean isDarkBackground(CardElementHolder holder){
         StatusBarNotification sbn = holder.getSbn();
         //eventual overridings should go in either Dark or Light Array
         if (Arrays.asList(forceDarkBackgroung).contains(sbn.getPackageName())) return true;
@@ -228,86 +229,6 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<NotificationL
         return -1;
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
-        StatusBarNotification sbn;
-        ViewGroup parent;
-        View root;
-        View notificationView;
-        GestureDetectorCompat gDetector;
 
-        public ViewHolder ( View r, ViewGroup p){
-            super(r);
-            root = r;
-            parent = p;
-            NotificationTouchListener nTouch = new NotificationTouchListener();
-            gDetector = new GestureDetectorCompat(root.getContext(),nTouch);
-            root.setOnTouchListener(nTouch);
-        }
-        public CardView getCardView (){
-            return (CardView) root.findViewById(R.id.cardListitem);
-        }
-        public void setSbn (StatusBarNotification n){
-            sbn = n;
-        }
-        public void setNotificationView(View view){
-            notificationView = view;
-            getCardView().addView(view);
-        }
-        public View getNotificationView(){
-            return notificationView;
-        }
-        public StatusBarNotification getSbn (){
-            return sbn;
-        }
-
-        public void performOnClick(){
-            //TODO open dialog with group notifications
-            PendingIntent pendingIntent = sbn.getNotification().contentIntent;
-            if (pendingIntent != null) {
-                try {
-                    pendingIntent.send();
-                } catch (PendingIntent.CanceledException e) {
-                    Log.e(TAG, "error sending the intent");
-                }
-            }
-
-            //TODO use swype and animation to implement this logic
-            /*if (nService != null) {
-                nService.cancelNotification(sbn);
-            }*/
-        }
-
-        @Override
-        public boolean equals (Object o){
-            if (o instanceof ViewHolder){
-                ViewHolder v = (ViewHolder) o;
-                if (v.getSbn() != null)
-                    return NotificationFilter.getNotificationKey(v.getSbn()).equals(NotificationFilter.getNotificationKey(sbn));
-            }
-            return false;
-        }
-
-        private class NotificationTouchListener extends GestureDetector.SimpleOnGestureListener implements View.OnTouchListener{
-
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return gDetector.onTouchEvent(event);
-            }
-
-            @Override
-            public boolean onDown(MotionEvent e) {
-                root.setPressed(true);
-                return true;
-            }
-
-            @Override
-            public boolean onSingleTapConfirmed(MotionEvent e) {
-                root.setPressed(false);
-                performOnClick();
-                return true;
-            }
-        }
-    }
 
 }
