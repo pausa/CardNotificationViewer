@@ -20,6 +20,8 @@
 package com.android.madpausa.cardnotificationviewer;
 
 import android.os.Bundle;
+import android.preference.EditTextPreference;
+import android.preference.Preference;
 import android.preference.PreferenceFragment;
 
 /**
@@ -32,6 +34,25 @@ public class SettingsActivityFragment extends PreferenceFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference_list);
+        overrideSummaries();
+    }
+
+    private void overrideSummaries() {
+        //let's write a good summary for threshold preference
+        EditTextPreference pref = (EditTextPreference) findPreference(NOTIFICATION_THRESHOLD);
+        String summary = getString(R.string.pref_notification_threshold_summary);
+        summary = String.format(summary,pref.getText());
+        pref.setSummary(summary);
+
+        //and provide an onchangelistener for next changes
+        pref.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                preference.setSummary(String.format(getString(R.string.pref_notification_threshold_summary), newValue));
+                return true;
+            }
+        });
+
     }
 
 
