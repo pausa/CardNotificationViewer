@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.Scroller;
 
@@ -159,6 +160,7 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
         //TODO check standard values
         static final int MIN_FLING_DISTANCE = 200;
         static final int MIN_FLING_VELOCITY = 200;
+        static final int MIN_SLIDE_DISTANCE = 5;
 
         float startX;
         boolean isMoving=false;
@@ -173,8 +175,11 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
                     case MotionEvent.ACTION_MOVE:
                         isMoving=true;
                         root.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-                        parent.requestDisallowInterceptTouchEvent(true);
-                        root.setTranslationX(v.getTranslationX() + (event.getX() - startX));
+                        int distance = (int) (event.getX() - startX);
+                        //should reserve touch only after a threshold
+                        if (Math.abs(distance) > MIN_SLIDE_DISTANCE)
+                            parent.requestDisallowInterceptTouchEvent(true);
+                        root.setTranslationX(v.getTranslationX() + distance);
                         result = true;
                         break;
                     case MotionEvent.ACTION_UP:
