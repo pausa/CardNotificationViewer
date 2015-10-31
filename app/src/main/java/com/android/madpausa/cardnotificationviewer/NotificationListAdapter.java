@@ -20,9 +20,11 @@
 package com.android.madpausa.cardnotificationviewer;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.service.notification.StatusBarNotification;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -45,9 +47,8 @@ import java.util.Set;
 public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHolder> {
     @SuppressWarnings("unused")
     private static final String TAG = NotificationListAdapter.class.getSimpleName();
-
-    private static final String[] forceDarkBackgroung = new String[]{"PACKAGE_NAME"};
-    private static final String[] forceLightBackgroung = new String[]{"PACKAGE_NAME"};
+    private static final String DARK_BACKGROUND_PREF = "DARK_BACKGROUND_PREF";
+    private static final String LIGHT_BACKGROUND_PREF = "LIGHT_BACKGROUND_PREF";
 
     List <StatusBarNotification> nList;
     Set<String> nSet;
@@ -55,6 +56,8 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
 
     //the notification filter for this adapter
     NotificationFilter nFilter;
+    NotificationFilter forceDarkBackground;
+    NotificationFilter forceLightBackground;
 
     Context context;
     public NotificationListAdapter(Context c) {
@@ -63,6 +66,8 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
         nList = new ArrayList<>();
         nSet = new HashSet<>();
         nFilter = new NotificationFilter();
+        forceDarkBackground = loadNotificationFilter(DARK_BACKGROUND_PREF);
+        forceLightBackground = loadNotificationFilter(LIGHT_BACKGROUND_PREF);
     }
 
     public void setNotificationService(ConcreteNotificationListenerService nService) {
@@ -176,9 +181,9 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
 
     private boolean isDarkBackground(CardElementHolder holder){
         StatusBarNotification sbn = holder.getSbn();
-        //eventual overridings should go in either Dark or Light Array
-        if (Arrays.asList(forceDarkBackgroung).contains(sbn.getPackageName())) return true;
-        if (Arrays.asList(forceLightBackgroung).contains(sbn.getPackageName())) return false;
+        //eventual overridings should go in either Dark or Light Filter
+        if (forceDarkBackground.matchFilter(sbn,null,true)) return true;
+        if (forceLightBackground.matchFilter(sbn,null,true)) return false;
 
         //base color, to force a light background (in line with default notification theme)
         int textColor = Color.BLACK;
@@ -236,6 +241,10 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
         return -1;
     }
 
-
+    private NotificationFilter loadNotificationFilter (String filterID){
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        Set<String> set = sp.getStringSet(filterID, null);
+        return new NotificationFilter().setPkgFilter(set);
+    }
 
 }
