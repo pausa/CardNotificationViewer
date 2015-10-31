@@ -216,25 +216,25 @@ public class NotificationFilter implements Parcelable, Cloneable {
 
     @SuppressWarnings("unused")
     public NotificationFilter setGroupFilter(List<String> groupFilter) {
-        this.groupFilter = groupFilter;
+        this.groupFilter = new LinkedList<>(groupFilter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter setTagFilter(List<String> tagFilter) {
-        this.tagFilter = tagFilter;
+        this.tagFilter = new LinkedList<>(tagFilter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter setKeyFilter(List<String> keyFilter) {
-        this.keyFilter = keyFilter;
+        this.keyFilter = new LinkedList<>(keyFilter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter setPkgFilter(List<String> pkgFilter) {
-        this.pkgFilter = pkgFilter;
+        this.pkgFilter = new LinkedList<>(pkgFilter);
         return this;
     }
 
