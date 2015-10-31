@@ -27,6 +27,7 @@ import android.service.notification.StatusBarNotification;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -37,10 +38,10 @@ import java.util.List;
 public class NotificationFilter implements Parcelable, Cloneable {
     boolean showChildern;
     boolean showSummary;
-    String groupFilter;
-    String tagFilter;
-    String keyFilter;
-    String pkgFilter;
+    List<String> groupFilter;
+    List<String> tagFilter;
+    List<String> keyFilter;
+    List<String> pkgFilter;
     int minPriority;
 
     /**
@@ -50,9 +51,9 @@ public class NotificationFilter implements Parcelable, Cloneable {
         showChildern = false;
         showSummary = true;
         groupFilter = null;
-        tagFilter = null;
-        keyFilter = null;
-        pkgFilter = null;
+        tagFilter = new LinkedList<>();
+        keyFilter = new LinkedList<>();
+        pkgFilter = new LinkedList<>();
         minPriority = Notification.PRIORITY_MIN;
     }
 
@@ -76,16 +77,23 @@ public class NotificationFilter implements Parcelable, Cloneable {
 
     protected NotificationFilter(Parcel in) {
         this();
-        boolean[] booleanFilters = in.createBooleanArray();
-        String[] stringFilters = in.createStringArray();
-        int[] intFilters = in.createIntArray();
-        showChildern = booleanFilters[0];
-        showSummary = booleanFilters[1];
-        groupFilter = stringFilters[0];
-        tagFilter = stringFilters[1];
-        keyFilter = stringFilters[2];
-        pkgFilter = stringFilters[3];
-        minPriority=intFilters[0];
+        showChildern = (boolean)in.readValue(null);
+        showSummary = (boolean)in.readValue(null);
+        in.readStringList(groupFilter);
+        in.readStringList(tagFilter);
+        in.readStringList(keyFilter);
+        in.readStringList(pkgFilter);
+        minPriority=in.readInt();
+    }
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeValue(showChildern);
+        dest.writeValue(showSummary);
+        dest.writeStringList(groupFilter);
+        dest.writeStringList(tagFilter);
+        dest.writeStringList(keyFilter);
+        dest.writeStringList(pkgFilter);
+        dest.writeInt(minPriority);
     }
 
     public static final Creator<NotificationFilter> CREATOR = new Creator<NotificationFilter>() {
@@ -105,15 +113,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
         return 0;
     }
 
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        boolean[] booleanFilters = new boolean[] {showChildern, showSummary};
-        String[] stringFilters = new String[] {groupFilter, tagFilter, keyFilter, pkgFilter};
-        int[] intFilters = new int[] {minPriority};
-        dest.writeBooleanArray(booleanFilters);
-        dest.writeStringArray(stringFilters);
-        dest.writeIntArray(intFilters);
-    }
+
 
     /**
      * Gets a key to use in notification map. Made to be compatible with older android versions
@@ -154,50 +154,37 @@ public class NotificationFilter implements Parcelable, Cloneable {
                 if (!showChildern && !isSummary(sbn))
                     return false;
         }
-        if (exact)
-            return matchExactFilter(sbn);
-        else
-            return matchFilter(sbn);
-    }
 
-    private boolean matchExactFilter(StatusBarNotification sbn) {
-        if (groupFilter != null)
-            if(!groupFilter.equals(sbn.getGroupKey()))
-                return false;
+        if (!matchStringFilter(groupFilter,sbn.getGroupKey(),exact))
+            return false;
 
-        if (tagFilter != null)
-            if(!tagFilter.equals(sbn.getTag()))
-                return false;
+        if (!matchStringFilter(tagFilter,sbn.getTag(),exact))
+            return false;
 
-        if (keyFilter != null)
-            if(!keyFilter.equals(getNotificationKey(sbn)))
-                return false;
+        if (!matchStringFilter(keyFilter,getNotificationKey(sbn),exact))
+            return false;
 
-        if (pkgFilter != null)
-            if(!pkgFilter.equals(sbn.getPackageName()))
-                return false;
+        //noinspection RedundantIfStatement -- disabled warning to mantain coherence with other conditions
+        if (!matchStringFilter(pkgFilter,sbn.getPackageName(),exact))
+            return false;
 
         return true;
     }
 
-    private boolean matchFilter(StatusBarNotification sbn) {
-        if (groupFilter != null)
-            if(sbn.getGroupKey() == null || !sbn.getGroupKey().contains(groupFilter))
-                return false;
-
-        if (tagFilter != null)
-            if(sbn.getTag() == null || !sbn.getTag().contains(tagFilter))
-                return false;
-
-        if (keyFilter != null)
-            if(getNotificationKey(sbn) == null || !getNotificationKey(sbn).contains(keyFilter))
-                return false;
-
-        if (pkgFilter != null)
-            if(sbn.getPackageName() == null || !sbn.getPackageName().contains(pkgFilter))
-                return false;
-
-        return true;
+    private boolean matchStringFilter (List<String> filterList, String s, boolean exact){
+        //string filter is matched if at least one item in the list matches
+        for (String filter : filterList){
+            if(exact){
+                if (filter.equals(s))
+                    return true;
+            }
+            else {
+                if (s != null && s.contains(filter))
+                    return true;
+            }
+        }
+        //if we arrive here, the filter matches only if no filter is present
+        return filterList.isEmpty();
     }
 
     /**
@@ -228,25 +215,25 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setGroupFilter(String groupFilter) {
+    public NotificationFilter setGroupFilter(List<String> groupFilter) {
         this.groupFilter = groupFilter;
         return this;
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setTagFilter(String tagFilter) {
+    public NotificationFilter setTagFilter(List<String> tagFilter) {
         this.tagFilter = tagFilter;
         return this;
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setKeyFilter(String keyFilter) {
+    public NotificationFilter setKeyFilter(List<String> keyFilter) {
         this.keyFilter = keyFilter;
         return this;
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setPkgFilter(String pkgFilter) {
+    public NotificationFilter setPkgFilter(List<String> pkgFilter) {
         this.pkgFilter = pkgFilter;
         return this;
     }
