@@ -36,7 +36,7 @@ import java.util.List;
  * this class represents a filter to apply to notifications, in order to show only specific ones
  */
 public class NotificationFilter implements Parcelable, Cloneable {
-    boolean showChildern;
+    boolean showChildren;
     boolean showSummary;
     List<String> groupFilter;
     List<String> tagFilter;
@@ -48,7 +48,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
      * constructor for the default filter. Meaning tha will hide children notifications.
      */
     public NotificationFilter (){
-        showChildern = false;
+        showChildren = false;
         showSummary = true;
         groupFilter = null;
         tagFilter = new LinkedList<>();
@@ -67,7 +67,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
         }
         return nf.setGroupFilter(groupFilter)
                     .setKeyFilter(keyFilter)
-                    .setShowChildern(showChildern)
+                    .setShowChildren(showChildren)
                     .setShowSummary(showSummary)
                     .setTagFilter(tagFilter)
                     .setPkgFilter(pkgFilter)
@@ -77,7 +77,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
 
     protected NotificationFilter(Parcel in) {
         this();
-        showChildern = (boolean)in.readValue(null);
+        showChildren = (boolean)in.readValue(null);
         showSummary = (boolean)in.readValue(null);
         in.readStringList(groupFilter);
         in.readStringList(tagFilter);
@@ -87,7 +87,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeValue(showChildern);
+        dest.writeValue(showChildren);
         dest.writeValue(showSummary);
         dest.writeStringList(groupFilter);
         dest.writeStringList(tagFilter);
@@ -151,7 +151,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
 
             //to be a child, it has to be in a group with a summary
             if (notificationGroups.getGroupSummary(sbn.getGroupKey()) != null)
-                if (!showChildern && !isSummary(sbn))
+                if (!showChildren && !isSummary(sbn))
                     return false;
         }
 
@@ -203,8 +203,8 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
     //setters
     @SuppressWarnings("unused")
-    public NotificationFilter setShowChildern(boolean showChildern) {
-        this.showChildern = showChildern;
+    public NotificationFilter setShowChildren(boolean showChildren) {
+        this.showChildren = showChildren;
         return this;
     }
 
@@ -215,50 +215,50 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setGroupFilter(List<String> groupFilter) {
-        this.groupFilter = new LinkedList<>(groupFilter);
+    public NotificationFilter setGroupFilter(Collection<String> filter) {
+        if (filter != null) this.groupFilter = new LinkedList<>(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter addGroupFilter(String filter) {
-        this.groupFilter.add(filter);
+        if (filter != null) this.groupFilter.add(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setTagFilter(List<String> tagFilter) {
-        this.tagFilter = new LinkedList<>(tagFilter);
+    public NotificationFilter setTagFilter(Collection<String> filter) {
+        if (filter != null) this.tagFilter = new LinkedList<>(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter addTagFilter(String filter) {
-        this.tagFilter.add(filter);
+        if (filter != null) this.tagFilter.add(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setKeyFilter(List<String> keyFilter) {
-        this.keyFilter = new LinkedList<>(keyFilter);
+    public NotificationFilter setKeyFilter(Collection<String> filter) {
+        if (filter != null) this.keyFilter = new LinkedList<>(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter addKeyFilter(String filter) {
-        this.keyFilter.add(filter);
+        if (filter != null) this.keyFilter.add(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
-    public NotificationFilter setPkgFilter(List<String> pkgFilter) {
-        this.pkgFilter = new LinkedList<>(pkgFilter);
+    public NotificationFilter setPkgFilter(Collection<String> filter) {
+        if (filter != null) this.pkgFilter = new LinkedList<>(filter);
         return this;
     }
 
     @SuppressWarnings("unused")
     public NotificationFilter addPkgFilter(String filter) {
-        this.pkgFilter.add(filter);
+        if (filter != null) this.pkgFilter.add(filter);
         return this;
     }
 
