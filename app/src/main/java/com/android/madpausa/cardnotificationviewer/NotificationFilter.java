@@ -221,8 +221,20 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
 
     @SuppressWarnings("unused")
+    public NotificationFilter addGroupFilter(String filter) {
+        this.groupFilter.add(filter);
+        return this;
+    }
+
+    @SuppressWarnings("unused")
     public NotificationFilter setTagFilter(List<String> tagFilter) {
         this.tagFilter = new LinkedList<>(tagFilter);
+        return this;
+    }
+
+    @SuppressWarnings("unused")
+    public NotificationFilter addTagFilter(String filter) {
+        this.tagFilter.add(filter);
         return this;
     }
 
@@ -233,8 +245,20 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
 
     @SuppressWarnings("unused")
+    public NotificationFilter addKeyFilter(String filter) {
+        this.keyFilter.add(filter);
+        return this;
+    }
+
+    @SuppressWarnings("unused")
     public NotificationFilter setPkgFilter(List<String> pkgFilter) {
         this.pkgFilter = new LinkedList<>(pkgFilter);
+        return this;
+    }
+
+    @SuppressWarnings("unused")
+    public NotificationFilter addPkgFilter(String filter) {
+        this.pkgFilter.add(filter);
         return this;
     }
 
