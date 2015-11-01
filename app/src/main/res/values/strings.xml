@@ -33,4 +33,12 @@
     <string name="pref_test_mode_title">Debug Mode</string>
     <string name="title_activity_settings">Settings</string>
     <string name="service_notification_text">%d Archived Notifications</string>
+
+    <string name="force_dark_background_dialog">Force Dark Background</string>
+    <string name="force_light_background_dialog">Force Light Background</string>
+    <string name="default_background_dialog">Restore Default Background</string>
+
+    <string name="force_archive_dialog">Always Archive App Notifications</string>
+    <string name="default_archive_dialog">Restore Default Archive Mode</string>
+
 </resources>
