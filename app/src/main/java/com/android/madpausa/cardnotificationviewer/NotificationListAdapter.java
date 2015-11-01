@@ -105,6 +105,17 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
     }
 
     /**
+     * notifies the update action, no change of position assumed
+     * @param sbn the notification to update
+     */
+    public void updateNotification (StatusBarNotification sbn){
+        int pos = findNotificationPosition(sbn);
+        if (pos >= 0){
+            notifyItemChanged(pos);
+        }
+    }
+
+    /**
      * removes notification from the list
      * @param sbn the notificatio nto be removed
      */
@@ -243,8 +254,69 @@ public class NotificationListAdapter  extends RecyclerView.Adapter<CardElementHo
 
     private NotificationFilter loadNotificationFilter (String filterID){
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        Set<String> set = sp.getStringSet(filterID, new HashSet<String>());
+        return new NotificationFilter().setPkgFilter(set).addPkgFilter("");
+    }
+
+    public void addToDarkBackground (StatusBarNotification sbn){
+        forceDarkBackground.addPkgFilter(sbn.getPackageName());
+        updateNotification(sbn);
+        persistFilterAdd(DARK_BACKGROUND_PREF,sbn.getPackageName());
+    }
+    public void addToLightBackground (StatusBarNotification sbn){
+        forceLightBackground.addPkgFilter(sbn.getPackageName());
+        updateNotification(sbn);
+        persistFilterAdd(LIGHT_BACKGROUND_PREF,sbn.getPackageName());
+    }
+
+    private void persistFilterAdd(String filterID, String packageName) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         Set<String> set = sp.getStringSet(filterID, null);
-        return new NotificationFilter().setPkgFilter(set);
+        if (set == null){
+            set = new HashSet<>();
+        }
+        set.add(packageName);
+
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putStringSet(filterID, set);
+
+        editor.apply();
+    }
+
+    public void restoreDefaultBackground(StatusBarNotification sbn){
+        String filterID = null;
+        NotificationFilter filter = null;
+        if (forceDarkBackground.matchFilter(sbn,null,true)){
+            filterID = DARK_BACKGROUND_PREF;
+            filter = forceDarkBackground;
+        }
+        else if (forceLightBackground.matchFilter(sbn,null,true)){
+            filterID = LIGHT_BACKGROUND_PREF;
+            filter = forceLightBackground;
+        }
+        if(filterID!=null){
+            filter.removePkgFilter(sbn.getPackageName());
+            updateNotification(sbn);
+            persistFilterRemove(filterID, sbn.getPackageName());
+        }
+    }
+
+    private void persistFilterRemove(String filterID, String packageName) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        Set<String> set = sp.getStringSet(filterID, null);
+        if (set == null){
+            return;
+        }
+        set.remove(packageName);
+
+        SharedPreferences.Editor editor = sp.edit();
+
+        if (set.isEmpty())
+            editor.remove(filterID);
+        else
+            editor.putStringSet(filterID, set);
+
+        editor.apply();
     }
 
 }

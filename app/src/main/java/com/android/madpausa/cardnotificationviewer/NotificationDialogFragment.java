@@ -26,6 +26,7 @@ import android.content.DialogInterface;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.service.notification.StatusBarNotification;
 
 import java.util.ArrayList;
 
@@ -42,12 +43,14 @@ public class NotificationDialogFragment extends DialogFragment {
 
     public static final String COLOR_BUNDLE = "COLOR_MODE";
     public static final String ARCHIVE_BUNDLE = "ARCHIVE_MODE";
-    public static final String PACKAGE_BUNDLE = "PKG_NAME";
+    public static final String NOTIFICATION_BUNDLE = "NOTIFICATION";
+    public static final String NOTIFICATION_DIALOG_INTENT = "com.madpausa.cardnotificationviewer.OPEN_NOTIFICATION_DIALOG";
 
 
-    ArrayList<String> itemTitles;
+    ArrayList<CharSequence> itemTitles;
     ArrayList<Integer> itemIds;
 
+    StatusBarNotification sbn;
     String title;
 
     NotificationDialogListener listener;
@@ -56,10 +59,21 @@ public class NotificationDialogFragment extends DialogFragment {
         super ();
         itemTitles = new ArrayList<>();
         itemIds = new ArrayList<>();
+    }
 
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        listener = (NotificationDialogListener) activity;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         int colorMode = getArguments().getInt(COLOR_BUNDLE,DEFAULT_COLOR);
         int archiveMode = getArguments().getInt(ARCHIVE_BUNDLE,DEFAULT_ARCHIVE);
-        String pkgName = getArguments().getString(PACKAGE_BUNDLE,null);
+        sbn = getArguments().getParcelable(NOTIFICATION_BUNDLE);
+        String pkgName = sbn.getPackageName();
 
         if (pkgName == null){
             title = "";
@@ -94,20 +108,14 @@ public class NotificationDialogFragment extends DialogFragment {
                 break;
             default:
                 itemTitles.add(getString(R.string.force_archive_dialog));
+                itemIds.add(FORCE_ARCHIVE);
                 break;
         }
-
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        listener = (NotificationDialogListener) activity;
     }
 
     public interface NotificationDialogListener{
-        void setColorMode(int mode);
-        void setArchiveMode(int mode);
+        void setColorMode(StatusBarNotification sbn, int mode);
+        void setArchiveMode(StatusBarNotification sbn, int mode);
     }
 
     @Override
@@ -116,7 +124,7 @@ public class NotificationDialogFragment extends DialogFragment {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(title);
-        builder.setItems((CharSequence[]) itemTitles.toArray(), new DialogInterface.OnClickListener() {
+        builder.setItems(itemTitles.toArray(new CharSequence[itemTitles.size()]), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 switch (itemIds.get(which)){
@@ -142,22 +150,22 @@ public class NotificationDialogFragment extends DialogFragment {
     }
 
     private void setDefaultArchive() {
-        listener.setArchiveMode(DEFAULT_ARCHIVE);
+        listener.setArchiveMode(sbn, DEFAULT_ARCHIVE);
     }
 
     private void setAlwaysArchive() {
-        listener.setArchiveMode(FORCE_ARCHIVE);
+        listener.setArchiveMode(sbn, FORCE_ARCHIVE);
     }
 
     private void setDefaultBackground() {
-        listener.setColorMode(DEFAULT_COLOR);
+        listener.setColorMode(sbn, DEFAULT_COLOR);
     }
 
     private void setDarkBackground() {
-        listener.setColorMode(FORCE_DARK);
+        listener.setColorMode(sbn, FORCE_DARK);
     }
 
     private void setLightBackground() {
-        listener.setColorMode(FORCE_LIGHT);
+        listener.setColorMode(sbn, FORCE_LIGHT);
     }
 }

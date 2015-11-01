@@ -26,6 +26,7 @@ import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.wifi.WifiConfiguration;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -39,9 +40,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 public class ConcreteNotificationListenerService extends NotificationListenerService {
     private static final String TAG = ConcreteNotificationListenerService.class.getSimpleName();
+    private static final String ALWAYS_ARCHIVE_PREF = "ALWAYS_ARCHIVE_PREF";
     public static final String CUSTOM_BINDING = "com.android.madpausa.cardnotificationviewer.CUSTOM_BINDING";
     public static final String NOTIFICATION_RECEIVER = "com.android.madpausa.cardnotificationviewer.NOTIFICATION_RECEIVER";
     public static final String NOTIFICATION_EXTRA = "notification";
@@ -63,6 +66,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     NotificationGroups notificationGroups;
     NotificationFilter baseNotificationFilter;
+    NotificationFilter alwaysArchiveFilter;
 
 
     /**
@@ -88,6 +92,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         archivedNotificationMap = new LinkedHashMap<>();
         notificationGroups = new NotificationGroups();
         baseNotificationFilter = new NotificationFilter();
+        alwaysArchiveFilter = initAlwaysHideFilter();
     }
 
     @Override
@@ -100,12 +105,10 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     public void handlePostedNotification (StatusBarNotification sbn) {
         //should be removed if already existing, in order to put it back in top position
         removeServiceNotification(sbn);
-        NotificationFilter notificationFilter = (NotificationFilter)baseNotificationFilter.clone();
-        //min priority notifications should be archived too
-        notificationFilter.setMinPriority(Notification.PRIORITY_DEFAULT);
-
+        NotificationFilter priorityFilter = ((NotificationFilter)baseNotificationFilter.clone()).setMinPriority(Notification.PRIORITY_DEFAULT);
         //if the notification has to be shown, is putted in the primary map
-        if (notificationFilter.matchFilter(sbn,notificationGroups,true))
+        if (!alwaysArchiveFilter.matchFilter(sbn,notificationGroups,true)
+                && priorityFilter.matchFilter(sbn,notificationGroups,true))
             notificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
         else {
             //otherwise, it goes directly in the archived ones
@@ -327,5 +330,49 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         //TODO find a legit way, even using root
     }
 
+    private NotificationFilter initAlwaysHideFilter(){
+        NotificationFilter filter = (NotificationFilter)baseNotificationFilter.clone();
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        Set<String> set = sp.getStringSet(ALWAYS_ARCHIVE_PREF, new HashSet<String>());
+        return filter.setPkgFilter(set).addPkgFilter("");
+    }
+
+    public boolean isAlwaysArchived (StatusBarNotification sbn){
+        return alwaysArchiveFilter.matchFilter(sbn, notificationGroups, true);
+    }
+
+    public void addToAlwaysArchived (StatusBarNotification sbn){
+        alwaysArchiveFilter.addPkgFilter(sbn.getPackageName());
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        Set<String> set = sp.getStringSet(ALWAYS_ARCHIVE_PREF, null);
+        if (set == null){
+            set = new HashSet<>();
+        }
+        set.add(sbn.getPackageName());
+
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putStringSet(ALWAYS_ARCHIVE_PREF, set);
+
+        editor.apply();
+    }
+
+    public void removeFromAlwaysArchived (StatusBarNotification sbn){
+        alwaysArchiveFilter.removePkgFilter(sbn.getPackageName());
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        Set<String> set = sp.getStringSet(ALWAYS_ARCHIVE_PREF, null);
+        if (set == null){
+            return;
+        }
+        set.remove(sbn.getPackageName());
+
+        SharedPreferences.Editor editor = sp.edit();
+
+        if (set.isEmpty())
+            editor.remove(ALWAYS_ARCHIVE_PREF);
+        else
+            editor.putStringSet(ALWAYS_ARCHIVE_PREF, set);
+
+        editor.apply();
+    }
 
 }

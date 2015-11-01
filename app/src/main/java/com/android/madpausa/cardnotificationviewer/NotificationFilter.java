@@ -43,6 +43,7 @@ public class NotificationFilter implements Parcelable, Cloneable {
     List<String> keyFilter;
     List<String> pkgFilter;
     int minPriority;
+    int maxPriority;
 
     /**
      * constructor for the default filter. Meaning tha will hide children notifications.
@@ -50,11 +51,12 @@ public class NotificationFilter implements Parcelable, Cloneable {
     public NotificationFilter (){
         showChildren = false;
         showSummary = true;
-        groupFilter = null;
+        groupFilter = new LinkedList<>();
         tagFilter = new LinkedList<>();
         keyFilter = new LinkedList<>();
         pkgFilter = new LinkedList<>();
         minPriority = Notification.PRIORITY_MIN;
+        maxPriority = Notification.PRIORITY_MAX;
     }
 
     @Override
@@ -71,7 +73,8 @@ public class NotificationFilter implements Parcelable, Cloneable {
                     .setShowSummary(showSummary)
                     .setTagFilter(tagFilter)
                     .setPkgFilter(pkgFilter)
-                    .setMinPriority(minPriority);
+                    .setMinPriority(minPriority)
+                    .setMaxPriority(maxPriority);
 
     }
 
@@ -142,6 +145,9 @@ public class NotificationFilter implements Parcelable, Cloneable {
     public boolean matchFilter (StatusBarNotification sbn, NotificationGroups notificationGroups, boolean exact){
         //Checking notificaiton priority
         if (sbn.getNotification().priority < minPriority)
+            return false;
+
+        if (sbn.getNotification().priority > maxPriority)
             return false;
 
         //these mean something, only if a NotificationGroups is passed
@@ -263,8 +269,19 @@ public class NotificationFilter implements Parcelable, Cloneable {
     }
 
     @SuppressWarnings("unused")
+    public NotificationFilter removePkgFilter(String filter) {
+        if (filter != null) this.pkgFilter.remove(filter);
+        return this;
+    }
+
+    @SuppressWarnings("unused")
     public NotificationFilter setMinPriority (int priority) {
         this.minPriority = priority;
+        return this;
+    }
+
+    public NotificationFilter setMaxPriority(int maxPriority) {
+        this.maxPriority = maxPriority;
         return this;
     }
 }

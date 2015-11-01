@@ -22,7 +22,10 @@ package com.android.madpausa.cardnotificationviewer;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.app.PendingIntent;
+import android.content.Intent;
+import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
@@ -38,7 +41,7 @@ import android.widget.Scroller;
  * Created by ANTPETRE on 26/10/2015.
  * This represents the viewHolder in the RecyclerView
  */
-public class CardElementHolder extends RecyclerView.ViewHolder {
+public class CardElementHolder extends RecyclerView.ViewHolder{
     private static final String TAG = CardElementHolder.class.getSimpleName();
 
     StatusBarNotification sbn;
@@ -170,20 +173,22 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
             boolean result = gDetector.onTouchEvent(event);
             //handling basic
             if (!result){
-                v.setPressed(false);
                 switch(event.getActionMasked()){
                     case MotionEvent.ACTION_MOVE:
-                        isMoving=true;
                         root.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                         int distance = (int) (event.getX() - startX);
                         //should reserve touch only after a threshold
-                        if (Math.abs(distance) > MIN_SLIDE_DISTANCE)
+                        if (Math.abs(distance) > MIN_SLIDE_DISTANCE){
                             parent.requestDisallowInterceptTouchEvent(true);
+                            isMoving=true;
+                            v.setPressed(false);
+                        }
                         root.setTranslationX(v.getTranslationX() + distance);
                         result = true;
                         break;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
+                        v.setPressed(false);
                         int x = Math.round(v.getTranslationX());
                         parent.requestDisallowInterceptTouchEvent(false);
                         scroller.startScroll(x, 0, -1 * x, 0, (int)animator.getDuration());
@@ -194,6 +199,19 @@ public class CardElementHolder extends RecyclerView.ViewHolder {
                 }
             }
             return result;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+            super.onLongPress(e);
+            if (!isMoving) {
+                Log.d(TAG, "Long pressing!");
+
+                //sending message to open dialog
+                Intent intent = new Intent(NotificationDialogFragment.NOTIFICATION_DIALOG_INTENT);
+                intent.putExtra(ConcreteNotificationListenerService.NOTIFICATION_EXTRA, sbn);
+                LocalBroadcastManager.getInstance(root.getContext().getApplicationContext()).sendBroadcast(intent);
+            }
         }
 
         @Override

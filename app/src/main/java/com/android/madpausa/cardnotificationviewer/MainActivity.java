@@ -43,7 +43,7 @@ import android.view.View;
 
 import static java.lang.System.currentTimeMillis;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements NotificationDialogFragment.NotificationDialogListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     ConcreteNotificationListenerService nService;
@@ -80,7 +80,8 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ConcreteNotificationListenerService.ADD_NOTIFICATION_ACTION);
         filter.addAction(ConcreteNotificationListenerService.REMOVE_NOTIFICATION_ACTION);
-        LocalBroadcastManager.getInstance(this).registerReceiver(nReceiver,filter);
+        filter.addAction(NotificationDialogFragment.NOTIFICATION_DIALOG_INTENT);
+        LocalBroadcastManager.getInstance(this).registerReceiver(nReceiver, filter);
         nFragment = (MainActivityFragment)getSupportFragmentManager().findFragmentById(R.id.fragment);
 
     }
@@ -120,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
         nBuilder.setContentTitle("Test Notification!");
         nBuilder.setContentText("This is just a test");
         nBuilder.setSmallIcon(R.drawable.ic_notification);
-        nBuilder.setPriority(Notification.PRIORITY_MIN);
 
         Notification notification = nBuilder.build();
 
@@ -150,6 +150,33 @@ public class MainActivity extends AppCompatActivity {
             nService.clearNotificationList();
     }
 
+    @Override
+    public void setColorMode(StatusBarNotification sbn, int mode) {
+        switch (mode){
+            case NotificationDialogFragment.FORCE_DARK:
+                nFragment.notificationAdapter.addToDarkBackground(sbn);
+                break;
+            case NotificationDialogFragment.FORCE_LIGHT:
+                nFragment.notificationAdapter.addToLightBackground(sbn);
+                break;
+            default:
+                nFragment.notificationAdapter.restoreDefaultBackground(sbn);
+        }
+    }
+
+    @Override
+    public void setArchiveMode(StatusBarNotification sbn, int mode) {
+        switch (mode){
+            case NotificationDialogFragment.FORCE_ARCHIVE:
+                nService.addToAlwaysArchived(sbn);
+                break;
+            default:
+                nService.removeFromAlwaysArchived(sbn);
+                break;
+        }
+
+    }
+
     private class NotificationReceiver extends BroadcastReceiver {
 
         @Override
@@ -159,6 +186,9 @@ public class MainActivity extends AppCompatActivity {
             if (pExtra != null && pExtra instanceof StatusBarNotification){
                 //checking action
                 switch (intent.getAction()) {
+                    case NotificationDialogFragment.NOTIFICATION_DIALOG_INTENT:
+                        openNotificationDialog ((StatusBarNotification) pExtra);
+                        break;
                     case ConcreteNotificationListenerService.REMOVE_NOTIFICATION_ACTION:
                         removeNotification((StatusBarNotification) pExtra);
                         break;
@@ -171,6 +201,30 @@ public class MainActivity extends AppCompatActivity {
                 Log.d (TAG, "received invalid message");
             }
         }
+    }
+
+    private void openNotificationDialog(StatusBarNotification sbn) {
+        Log.d(TAG, "opening dialog!");
+        Bundle bun = new Bundle();
+        bun.putParcelable(NotificationDialogFragment.NOTIFICATION_BUNDLE, sbn);
+
+        int colorMode = NotificationDialogFragment.DEFAULT_COLOR;
+        if (nFragment.notificationAdapter.forceDarkBackground.matchFilter(sbn,null,true)){
+            colorMode = NotificationDialogFragment.FORCE_DARK;
+        }
+        else if (nFragment.notificationAdapter.forceLightBackground.matchFilter(sbn,null,true)){
+            colorMode = NotificationDialogFragment.FORCE_LIGHT;
+        }
+        bun.putInt(NotificationDialogFragment.COLOR_BUNDLE,colorMode);
+
+        int archiveMode = NotificationDialogFragment.DEFAULT_ARCHIVE;
+        if (nService.isAlwaysArchived(sbn))
+            archiveMode = NotificationDialogFragment.FORCE_ARCHIVE;
+        bun.putInt(NotificationDialogFragment.ARCHIVE_BUNDLE,archiveMode);
+
+        NotificationDialogFragment dialog = new NotificationDialogFragment();
+        dialog.setArguments(bun);
+        dialog.show(getFragmentManager(),NotificationDialogFragment.class.getSimpleName());
     }
 
 }
