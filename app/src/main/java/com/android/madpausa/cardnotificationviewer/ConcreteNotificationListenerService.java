@@ -26,7 +26,6 @@ import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiConfiguration;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -104,7 +103,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     public void handlePostedNotification (StatusBarNotification sbn) {
         //should be removed if already existing, in order to put it back in top position
-        removeServiceNotification(sbn);
+        removeInternalNotification(sbn);
         NotificationFilter priorityFilter = ((NotificationFilter)baseNotificationFilter.clone()).setMinPriority(Notification.PRIORITY_DEFAULT);
         //if the notification has to be shown, is putted in the primary map
         if (!alwaysArchiveFilter.matchFilter(sbn,notificationGroups,true)
@@ -113,7 +112,6 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         else {
             //otherwise, it goes directly in the archived ones
             archivedNotificationMap.put(NotificationFilter.getNotificationKey(sbn), sbn);
-            sendServiceNotification();
         }
 
         //adding it to the group structure
@@ -127,6 +125,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         Intent intent = new Intent(ADD_NOTIFICATION_ACTION);
         intent.putExtra(NOTIFICATION_EXTRA, sbn);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+
+        //sending notification only at the end, always, as it would be canceled, at most
+        handleServiceNotification();
     }
 
     private void archiveNotifications() {
@@ -150,8 +151,6 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
                 break;
         }
 
-        //displaying the notification about remining ones
-        sendServiceNotification();
     }
 
     //returning a map containing all the notifications, because it's linked, the order is preserved
@@ -214,8 +213,6 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
 
     }
 
-
-
     @Override
     public IBinder onBind(Intent intent) {
         sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -244,10 +241,17 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     }
 
     /**
-     * removes notification from this service only
+     * removes notification from this service only,  handles the service notification too
      * @param sbn the notification to be removed from service
      */
     public void removeServiceNotification(StatusBarNotification sbn){
+        removeInternalNotification(sbn);
+
+        //if archived notifications are over, I should remove service notification, otherwise update it
+        handleServiceNotification();
+    }
+
+    private void removeInternalNotification(StatusBarNotification sbn){
         String nKey = NotificationFilter.getNotificationKey(sbn);
 
         //removes from main notifications
@@ -256,11 +260,6 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         //removes from archived notifications
         archivedNotificationMap.remove(nKey);
 
-        //if archived notifications are over, I should remove service notification, otherwise update it
-        if (archivedNotificationMap.size() < 1)
-            removeServiceNotification();
-        else sendServiceNotification();
-
         //it should be removed from group structure too
         notificationGroups.removeGroupMember(sbn);
     }
@@ -268,7 +267,9 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
     /**
      * sends the service notification
      */
-    private void sendServiceNotification (){
+    private void handleServiceNotification(){
+
+        NotificationManager nManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         //filtering archived notification list
         List<StatusBarNotification> filteredArchivedNotificationList = baseNotificationFilter.applyFilter(archivedNotificationMap.values(), notificationGroups, true);
@@ -286,8 +287,6 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
                 nBuilder.setColor(getResources().getColor(R.color.app_background, null));
             else //noinspection deprecation
                 nBuilder.setColor(getResources().getColor(R.color.app_background));
-
-            NotificationManager nManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
             //setting the intent
             Intent resultIntent = new Intent(this, MainActivity.class);
@@ -313,12 +312,7 @@ public class ConcreteNotificationListenerService extends NotificationListenerSer
         }
         //else I should remove the notification
         else
-            removeServiceNotification();
-    }
-
-    private void removeServiceNotification(){
-        NotificationManager nManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-        nManager.cancel(SERVICE_NOTIFICATION,0);
+            nManager.cancel(SERVICE_NOTIFICATION,0);
     }
 
     /**
